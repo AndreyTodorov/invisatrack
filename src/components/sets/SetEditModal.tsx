@@ -55,6 +55,9 @@ export default function SetEditModal({ set, stats, isCurrent, prevSet, nextSet, 
   // If set.endDate is null (legacy open set), any computed end date counts as changed —
   // this is intentional: first-time setting an end date should cascade to the next set.
   const endChanged = computedEndDate !== null && computedEndDate !== set.endDate?.slice(0, 10)
+  const noteChanged = (note.trim() || null) !== set.note
+  const setNumberChanged = false // wired up in Task 3
+  const hasChanges = startChanged || endChanged || noteChanged || setNumberChanged
 
   // Advisory text shown inline near each field
   const prevAdjustNote = startChanged && prevSet
@@ -80,7 +83,7 @@ export default function SetEditModal({ set, stats, isCurrent, prevSet, nextSet, 
 
   const adjacencyError = prevOvershotError ?? nextOvershotError ?? null
 
-  const canSave = !saving && !durationError && !startDateError && !adjacencyError
+  const canSave = hasChanges && !saving && !durationError && !startDateError && !adjacencyError
 
   const handleSave = async () => {
     if (!canSave) return
