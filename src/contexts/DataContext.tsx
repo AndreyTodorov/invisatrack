@@ -1,0 +1,105 @@
+import {
+  createContext, useContext, useEffect, useState, ReactNode,
+} from 'react'
+import { onValue, sessionsRef, setsRef, profileRef, treatmentRef } from '../services/firebase'
+import { localDB } from '../services/db'
+import { Session, AlignerSet, UserProfile, Treatment } from '../types'
+
+interface DataContextValue {
+  sessions: Session[]
+  sets: AlignerSet[]
+  profile: UserProfile | null
+  treatment: Treatment | null
+  loaded: boolean
+}
+
+const DataContext = createContext<DataContextValue | null>(null)
+
+export function DataProvider({ uid, children }: { uid: string; children: ReactNode }) {
+  const [sessions, setSessions] = useState<Session[]>([])
+  const [sets, setSets] = useState<AlignerSet[]>([])
+  const [profile, setProfile] = useState<UserProfile | null>(null)
+  const [treatment, setTreatment] = useState<Treatment | null>(null)
+  const [loaded, setLoaded] = useState(false)
+
+  // Load from IndexedDB first (instant, offline-capable)
+  useEffect(() => {
+    Promise.all([
+      localDB.sessions.where('uid').equals(uid).toArray(),
+      localDB.sets.where('uid').equals(uid).toArray(),
+      localDB.profile.get(uid),
+      localDB.treatment.get(uid),
+    ]).then(([s, sets, p, t]) => {
+      setSessions(s)
+      setSets(sets)
+      setProfile(p ?? null)
+      setTreatment(t ?? null)
+      setLoaded(true)
+    })
+  }, [uid])
+
+  // Subscribe to Firebase real-time updates
+  useEffect(() => {
+    const unsubSessions = onValue(sessionsRef(uid), snap => {
+      const data = snap.val() ?? {}
+      const firebaseSessions: Session[] = Object.entries(data).map(
+        ([id, v]) => ({ id, ...(v as object) } as Session)
+      )
+
+      // FIX CR-2: Merge Firebase data with local-only (offline) sessions
+      // Keep local sessions that aren't in Firebase yet (still in syncQueue)
+      setSessions(prev => {
+        const firebaseIds = new Set(firebaseSessions.map(s => s.id))
+        const localOnly = prev.filter(s => !firebaseIds.has(s.id))
+        return [...firebaseSessions, ...localOnly]
+      })
+
+      // FIX CR-2: Only persist if Firebase has newer data (prevents overwriting pending offline writes)
+      firebaseSessions.forEach(async s => {
+        const existing = await localDB.sessions.get(s.id)
+        if (!existing || existing.updatedAt <= s.updatedAt) {
+          await localDB.sessions.put({ ...s, uid })
+        }
+      })
+    })
+
+    const unsubSets = onValue(setsRef(uid), snap => {
+      const data = snap.val() ?? {}
+      const arr: AlignerSet[] = Object.entries(data).map(
+        ([id, v]) => ({ id, ...(v as object) } as AlignerSet)
+      )
+      setSets(arr)
+      arr.forEach(s => localDB.sets.put({ ...s, uid }))
+    })
+
+    const unsubProfile = onValue(profileRef(uid), snap => {
+      const p = snap.val() as UserProfile | null
+      if (p) {
+        setProfile(p)
+        localDB.profile.put({ ...p, uid })
+      }
+    })
+
+    const unsubTreatment = onValue(treatmentRef(uid), snap => {
+      const t = snap.val() as Treatment | null
+      if (t) {
+        setTreatment(t)
+        localDB.treatment.put({ ...t, uid })
+      }
+    })
+
+    return () => { unsubSessions(); unsubSets(); unsubProfile(); unsubTreatment() }
+  }, [uid])
+
+  return (
+    <DataContext.Provider value={{ sessions, sets, profile, treatment, loaded }}>
+      {children}
+    </DataContext.Provider>
+  )
+}
+
+export function useDataContext(): DataContextValue {
+  const ctx = useContext(DataContext)
+  if (!ctx) throw new Error('useDataContext must be inside DataProvider')
+  return ctx
+}
