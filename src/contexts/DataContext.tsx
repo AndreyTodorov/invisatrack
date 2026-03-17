@@ -35,6 +35,9 @@ export function DataProvider({ uid, children }: { uid: string; children: ReactNo
       setProfile(p ?? null)
       setTreatment(t ?? null)
       setLoaded(true)
+    }).catch(err => {
+      console.error('Failed to load from IndexedDB:', err)
+      setLoaded(true)
     })
   }, [uid])
 
@@ -56,9 +59,13 @@ export function DataProvider({ uid, children }: { uid: string; children: ReactNo
 
       // FIX CR-2: Only persist if Firebase has newer data (prevents overwriting pending offline writes)
       firebaseSessions.forEach(async s => {
-        const existing = await localDB.sessions.get(s.id)
-        if (!existing || existing.updatedAt <= s.updatedAt) {
-          await localDB.sessions.put({ ...s, uid })
+        try {
+          const existing = await localDB.sessions.get(s.id)
+          if (!existing || existing.updatedAt <= s.updatedAt) {
+            await localDB.sessions.put({ ...s, uid })
+          }
+        } catch (err) {
+          console.error('Failed to persist session to IndexedDB:', err)
         }
       })
     })
@@ -69,14 +76,20 @@ export function DataProvider({ uid, children }: { uid: string; children: ReactNo
         ([id, v]) => ({ id, ...(v as object) } as AlignerSet)
       )
       setSets(arr)
-      arr.forEach(s => localDB.sets.put({ ...s, uid }))
+      arr.forEach(s => {
+        localDB.sets.put({ ...s, uid }).catch(err =>
+          console.error('Failed to persist set to IndexedDB:', err)
+        )
+      })
     })
 
     const unsubProfile = onValue(profileRef(uid), snap => {
       const p = snap.val() as UserProfile | null
       if (p) {
         setProfile(p)
-        localDB.profile.put({ ...p, uid })
+        localDB.profile.put({ ...p, uid }).catch(err =>
+          console.error('Failed to persist profile to IndexedDB:', err)
+        )
       }
     })
 
@@ -84,7 +97,9 @@ export function DataProvider({ uid, children }: { uid: string; children: ReactNo
       const t = snap.val() as Treatment | null
       if (t) {
         setTreatment(t)
-        localDB.treatment.put({ ...t, uid })
+        localDB.treatment.put({ ...t, uid }).catch(err =>
+          console.error('Failed to persist treatment to IndexedDB:', err)
+        )
       }
     })
 
