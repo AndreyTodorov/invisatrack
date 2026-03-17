@@ -32,7 +32,7 @@ vi.mock('../contexts/AuthContext', () => ({
 }))
 
 vi.mock('../contexts/DataContext', () => ({
-  useDataContext: vi.fn(() => ({ sessions: [] })),
+  useDataContext: vi.fn(() => ({ sessions: [], setSessions: vi.fn() })),
 }))
 
 vi.mock('./useOnlineStatus', () => ({
@@ -81,7 +81,7 @@ beforeEach(() => {
   vi.mocked(localDB.sessions.update).mockResolvedValue(undefined as never)
   vi.mocked(localDB.sessions.delete).mockResolvedValue(undefined as never)
   vi.mocked(queueWrite).mockResolvedValue(undefined as never)
-  vi.mocked(useDataContext).mockReturnValue({ sessions: [] } as never)
+  vi.mocked(useDataContext).mockReturnValue({ sessions: [], setSessions: vi.fn() } as never)
   vi.mocked(useOnlineStatus).mockReturnValue(true)
 })
 
@@ -240,6 +240,26 @@ describe('deleteSession', () => {
     expect(queueWrite).toHaveBeenCalledWith(
       expect.objectContaining({ operation: 'delete', path: 'users/user1/sessions/s1' })
     )
+  })
+
+  it('optimistically removes session from React state when deleted', async () => {
+    const setSessions = vi.fn()
+    vi.mocked(useDataContext).mockReturnValue({
+      sessions: [makeSession('s1', '2026-03-17T09:00:00.000Z', null)],
+      setSessions,
+    } as never)
+
+    const { result } = renderHook(() => useSessions())
+    await act(async () => { await result.current.deleteSession('s1') })
+
+    expect(setSessions).toHaveBeenCalledTimes(1)
+    // The updater passed to setSessions should filter out the deleted session
+    const updater = setSessions.mock.calls[0][0]
+    const prev = [
+      makeSession('s1', '2026-03-17T09:00:00.000Z', null),
+      makeSession('s2', '2026-03-17T08:00:00.000Z', '2026-03-17T08:30:00.000Z'),
+    ]
+    expect(updater(prev)).toEqual([makeSession('s2', '2026-03-17T08:00:00.000Z', '2026-03-17T08:30:00.000Z')])
   })
 })
 
