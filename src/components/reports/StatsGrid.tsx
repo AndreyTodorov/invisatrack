@@ -16,7 +16,7 @@ export default function StatsGrid({ stats }: Props) {
   const items = [
     { label: 'Avg Wear', value: `${avgWear.toFixed(1)}%` },
     { label: 'Total Removals', value: String(totalRemovals) },
-    { label: 'Avg/Day', value: avgRemovals.toFixed(1) },
+    { label: 'Avg/Day', value: String(Math.round(avgRemovals)) },
     { label: 'Longest Off', value: formatDuration(longestRemoval) },
     { label: 'Compliant Days', value: `${complianceDays}/${stats.length}` },
   ]
