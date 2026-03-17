@@ -23,10 +23,10 @@ export default function LoginView() {
           fontSize: 32, fontWeight: 700, color: 'var(--text)',
           letterSpacing: '-0.02em', marginBottom: 10,
         }}>
-          AlignerTrack
+          InvisaTrack
         </h1>
         <p style={{ fontSize: 15, color: 'var(--text-muted)' }}>
-          Track your Invisalign wear time
+          Track your aligner wear time
         </p>
       </div>
 

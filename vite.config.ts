@@ -11,8 +11,8 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       manifest: {
-        name: 'Invisalign Tracker',
-        short_name: 'AlignerTrack',
+        name: 'InvisaTrack',
+        short_name: 'InvisaTrack',
         start_url: '/invisalign/',
         display: 'standalone',
         background_color: '#ffffff',
