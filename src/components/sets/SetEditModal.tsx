@@ -145,11 +145,15 @@ export default function SetEditModal({ set, stats, isCurrent, prevSet, nextSet, 
   }
 
   const handlePickCurrent = async (pickedSet: AlignerSet) => {
-    await updateTreatment({
-      currentSetNumber: pickedSet.setNumber,
-      currentSetStartDate: pickedSet.startDate.slice(0, 10),
-    })
-    onClose()
+    try {
+      await updateTreatment({
+        currentSetNumber: pickedSet.setNumber,
+        currentSetStartDate: pickedSet.startDate.slice(0, 10),
+      })
+      onClose()
+    } catch (e: unknown) {
+      setError((e as Error).message)
+    }
   }
 
   return (
