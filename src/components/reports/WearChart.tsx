@@ -4,6 +4,7 @@ import {
 } from 'recharts'
 import type { DailyStats } from '../../types'
 import { MINUTES_PER_DAY } from '../../constants'
+import { formatDuration } from '../../utils/time'
 
 interface Props {
   data: DailyStats[]
@@ -15,11 +16,12 @@ export default function WearChart({ data, goalMinutes }: Props) {
     date: d.date.slice(8, 10) + '.' + d.date.slice(5, 7), // DD.MM
     wear: Math.round(d.wearPercentage),
     compliant: d.compliant,
+    offMinutes: d.totalOffMinutes,
   }))
 
   const goalPercent = Math.round((goalMinutes / MINUTES_PER_DAY) * 100)
 
-  const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: { value: number }[]; label?: string }) => {
+  const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: { value: number; payload: { offMinutes: number } }[]; label?: string }) => {
     if (!active || !payload?.length) return null
     return (
       <div style={{
@@ -28,8 +30,13 @@ export default function WearChart({ data, goalMinutes }: Props) {
         borderRadius: 10, padding: '8px 12px',
         fontSize: 13,
       }}>
-        <div style={{ color: 'var(--text-muted)', marginBottom: 2 }}>{label}</div>
+        <div style={{ color: 'var(--text-muted)', marginBottom: 4 }}>{label}</div>
         <div style={{ color: 'var(--cyan)', fontWeight: 600 }}>{payload[0].value}% wear</div>
+        {payload[0].payload.offMinutes > 0 && (
+          <div style={{ color: 'var(--text-muted)', fontSize: 12, marginTop: 2 }}>
+            {formatDuration(payload[0].payload.offMinutes)} off
+          </div>
+        )}
       </div>
     )
   }

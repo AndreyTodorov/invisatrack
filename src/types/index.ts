@@ -15,8 +15,7 @@ export interface AlignerSet {
   id: string
   setNumber: number
   startDate: string
-  endDate: string | null
-  durationDaysOverride: number | null
+  endDate: string | null  // always set for new sets; null only for legacy open sets
   note: string | null
 }
 

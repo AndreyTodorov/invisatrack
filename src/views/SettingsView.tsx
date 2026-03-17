@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useAuthContext } from '../contexts/AuthContext'
 import { useDataContext } from '../contexts/DataContext'
 import { useSets } from '../hooks/useSets'
@@ -7,11 +7,14 @@ import ExportButton from '../components/settings/ExportButton'
 import { requestNotificationPermission } from '../services/notifications'
 import { update, ref, db } from '../services/firebase'
 import { localDB } from '../services/db'
+import { addDays, dateDiffDays, todayLocalDate } from '../utils/time'
 import {
   DEFAULT_DAILY_WEAR_GOAL_MINUTES,
   DEFAULT_REMINDER_THRESHOLD_MINUTES,
   DEFAULT_AUTO_CAP_MINUTES,
 } from '../constants'
+
+type SaveState = 'idle' | 'saving' | 'saved' | 'error'
 
 const sectionStyle: React.CSSProperties = {
   background: 'var(--surface)',
@@ -31,92 +34,264 @@ const sectionTitleStyle: React.CSSProperties = {
   letterSpacing: '0.06em', textTransform: 'uppercase',
 }
 
-const primaryBtn: React.CSSProperties = {
-  width: '100%', background: 'var(--cyan)', color: '#06090f',
-  border: 'none', borderRadius: 12, padding: '13px 0',
-  fontSize: 14, fontWeight: 700, fontFamily: 'inherit', cursor: 'pointer',
-  letterSpacing: '0.02em',
-}
-
 const secondaryBtn: React.CSSProperties = {
   width: '100%', background: 'var(--surface-3)', color: 'var(--text)',
   border: '1px solid var(--border-strong)', borderRadius: 12, padding: '13px 0',
   fontSize: 14, fontWeight: 600, fontFamily: 'inherit', cursor: 'pointer',
 }
 
+function SaveButton({
+  state,
+  dirty,
+  idleLabel,
+  onClick,
+}: {
+  state: SaveState
+  dirty: boolean
+  idleLabel: string
+  onClick: () => void
+}) {
+  const label =
+    state === 'saving' ? 'Saving…' :
+    state === 'saved'  ? 'Saved ✓' :
+    idleLabel
+
+  const isDisabled = state === 'saving' || (!dirty && state === 'idle')
+
+  const bg =
+    state === 'saved'   ? 'var(--green)' :
+    state === 'error'   ? 'var(--rose)' :
+    isDisabled          ? 'var(--surface-3)' :
+    'var(--cyan)'
+
+  const textColor = isDisabled ? 'var(--text-faint)' : '#06090f'
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+      {dirty && state === 'idle' && (
+        <p style={{ fontSize: 11, color: 'var(--amber)', textAlign: 'right', margin: 0 }}>
+          Unsaved changes
+        </p>
+      )}
+      <button
+        onClick={onClick}
+        disabled={isDisabled}
+        style={{
+          width: '100%', background: bg, color: textColor,
+          border: isDisabled ? '1px solid var(--border)' : 'none',
+          borderRadius: 12, padding: '13px 0',
+          fontSize: 14, fontWeight: 700, fontFamily: 'inherit',
+          cursor: isDisabled ? 'default' : 'pointer',
+          letterSpacing: '0.02em',
+          transition: 'background 0.25s, opacity 0.2s',
+        }}
+      >
+        {label}
+      </button>
+    </div>
+  )
+}
+
+function FieldError({ message }: { message?: string }) {
+  if (!message) return null
+  return (
+    <p style={{ fontSize: 11, color: 'var(--rose)', margin: '4px 0 0', padding: 0 }}>
+      {message}
+    </p>
+  )
+}
+
 export default function SettingsPageView() {
   const { user, signOut } = useAuthContext()
-  const { profile, treatment } = useDataContext()
-  const { updateTreatment, startNewSet } = useSets()
+  const { profile, treatment, sets } = useDataContext()
+  const { updateTreatment, startNewSet, updateSet } = useSets()
   const { status, queueCount } = useSync()
 
-  const [goalHours, setGoalHours] = useState(DEFAULT_DAILY_WEAR_GOAL_MINUTES / 60)
+  // Goal split into hours + minutes
+  const [goalHours, setGoalHours] = useState(Math.floor(DEFAULT_DAILY_WEAR_GOAL_MINUTES / 60))
+  const [goalMins, setGoalMins] = useState(DEFAULT_DAILY_WEAR_GOAL_MINUTES % 60)
   const [reminderMins, setReminderMins] = useState(DEFAULT_REMINDER_THRESHOLD_MINUTES)
   const [autoCapMins, setAutoCapMins] = useState(DEFAULT_AUTO_CAP_MINUTES)
   const [totalSets, setTotalSets] = useState<string>('')
   const [defaultDuration, setDefaultDuration] = useState(7)
+
+  // Track initial values to detect unsaved changes
+  const profileInitRef = useRef({ goalHours: 0, goalMins: 0, reminderMins: 0, autoCapMins: 0 })
+  const treatmentInitRef = useRef({ totalSets: '', defaultDuration: 7 })
+
+  const [profileSaveState, setProfileSaveState] = useState<SaveState>('idle')
+  const [treatmentSaveState, setTreatmentSaveState] = useState<SaveState>('idle')
+
+  const [touched, setTouched] = useState({
+    goalHours: false, goalMins: false, reminderMins: false, autoCapMins: false, defaultDuration: false,
+  })
+  const touch = (field: keyof typeof touched) =>
+    setTouched(prev => ({ ...prev, [field]: true }))
+
+  // Current set duration override
+  const [setDurationOverride, setSetDurationOverride] = useState<string>('')
+  const setDurationOverrideInitRef = useRef<string>('')
+  const [setDurationSaveState, setSetDurationSaveState] = useState<SaveState>('idle')
+
   const [newSetNumber, setNewSetNumber] = useState<string>('')
-  // FIX SF-2: in-UI confirmation instead of window.confirm()
+  const [newSetDuration, setNewSetDuration] = useState<string>('')
   const [confirmNewSet, setConfirmNewSet] = useState<number | null>(null)
+  const [newSetError, setNewSetError] = useState<string | null>(null)
   const [notifGranted, setNotifGranted] = useState(
     typeof Notification !== 'undefined' && Notification.permission === 'granted'
   )
-  const [saveError, setSaveError] = useState<string | null>(null)
 
   useEffect(() => {
     if (profile) {
-      setGoalHours(profile.dailyWearGoalMinutes / 60)
+      const h = Math.floor(profile.dailyWearGoalMinutes / 60)
+      const m = profile.dailyWearGoalMinutes % 60
+      setGoalHours(h)
+      setGoalMins(m)
       setReminderMins(profile.reminderThresholdMinutes)
       setAutoCapMins(profile.autoCapMinutes)
+      profileInitRef.current = { goalHours: h, goalMins: m, reminderMins: profile.reminderThresholdMinutes, autoCapMins: profile.autoCapMinutes }
     }
     if (treatment) {
-      setTotalSets(treatment.totalSets ? String(treatment.totalSets) : '')
-      setDefaultDuration(treatment.defaultSetDurationDays)
+      const ts = treatment.totalSets ? String(treatment.totalSets) : ''
+      const dd = treatment.defaultSetDurationDays
+      setTotalSets(ts)
+      setDefaultDuration(dd)
+      treatmentInitRef.current = { totalSets: ts, defaultDuration: dd }
+
+      // Auto-fill next set number and default duration
+      setNewSetNumber(String(treatment.currentSetNumber + 1))
+      setNewSetDuration(String(treatment.defaultSetDurationDays))
+
+      // Pre-fill current set's duration (derived from endDate - startDate)
+      const currentSet = sets.find(s => s.setNumber === treatment.currentSetNumber)
+      const overrideStr = currentSet?.endDate
+        ? String(dateDiffDays(currentSet.startDate, currentSet.endDate))
+        : ''
+      setSetDurationOverride(overrideStr)
+      setDurationOverrideInitRef.current = overrideStr
     }
-  }, [profile, treatment])
+  }, [profile, treatment, sets])
+
+  // Dirty detection
+  const init = profileInitRef.current
+  const profileDirty =
+    goalHours !== init.goalHours ||
+    goalMins !== init.goalMins ||
+    reminderMins !== init.reminderMins ||
+    autoCapMins !== init.autoCapMins
+
+  const ti = treatmentInitRef.current
+  const treatmentDirty = totalSets !== ti.totalSets || defaultDuration !== ti.defaultDuration
+
+  // Validation
+  const totalGoalMins = goalHours * 60 + goalMins
+  const goalError =
+    totalGoalMins < 60  ? 'Goal must be at least 1 hour' :
+    totalGoalMins > 1380 ? 'Goal cannot exceed 23 hours' :
+    undefined
+
+  const reminderError =
+    reminderMins < 5    ? 'Minimum 5 minutes' :
+    reminderMins >= autoCapMins ? 'Reminder must be less than auto-cap duration' :
+    undefined
+
+  const autoCapError =
+    autoCapMins < 30    ? 'Minimum 30 minutes' :
+    autoCapMins > 480   ? 'Maximum 8 hours' :
+    undefined
+
+  const profileHasErrors = !!(goalError || reminderError || autoCapError)
+
+  const durationError =
+    defaultDuration < 1  ? 'Minimum 1 day' :
+    defaultDuration > 30 ? 'Maximum 30 days' :
+    undefined
+
+  const treatmentHasErrors = !!durationError
 
   const saveProfile = async () => {
-    if (!user) return
-    setSaveError(null)
+    setTouched(prev => ({ ...prev, goalHours: true, goalMins: true, reminderMins: true, autoCapMins: true }))
+    if (!user || profileHasErrors) return
+    setProfileSaveState('saving')
     try {
       const updates = {
-        dailyWearGoalMinutes: Math.round(goalHours * 60),
+        dailyWearGoalMinutes: totalGoalMins,
         reminderThresholdMinutes: reminderMins,
         autoCapMinutes: autoCapMins,
       }
       await update(ref(db, `users/${user.uid}/profile`), updates)
       await localDB.profile.update(user.uid, updates)
-    } catch (e: unknown) {
-      setSaveError((e as Error).message)
+      profileInitRef.current = { goalHours, goalMins, reminderMins, autoCapMins }
+      setTouched(prev => ({ ...prev, goalHours: false, goalMins: false, reminderMins: false, autoCapMins: false }))
+      setProfileSaveState('saved')
+      setTimeout(() => setProfileSaveState('idle'), 2000)
+    } catch {
+      setProfileSaveState('error')
+      setTimeout(() => setProfileSaveState('idle'), 3000)
     }
   }
 
   const saveTreatment = async () => {
-    setSaveError(null)
+    setTouched(prev => ({ ...prev, defaultDuration: true }))
+    if (treatmentHasErrors) return
+    setTreatmentSaveState('saving')
     try {
       await updateTreatment({
         totalSets: totalSets ? parseInt(totalSets) : null,
         defaultSetDurationDays: defaultDuration,
       })
-    } catch (e: unknown) {
-      setSaveError((e as Error).message)
+      treatmentInitRef.current = { totalSets, defaultDuration }
+      setTouched(prev => ({ ...prev, defaultDuration: false }))
+      setTreatmentSaveState('saved')
+      setTimeout(() => setTreatmentSaveState('idle'), 2000)
+    } catch {
+      setTreatmentSaveState('error')
+      setTimeout(() => setTreatmentSaveState('idle'), 3000)
+    }
+  }
+
+  const saveSetDurationOverride = async () => {
+    if (!treatment) return
+    const currentSet = sets.find(s => s.setNumber === treatment.currentSetNumber)
+    if (!currentSet || setDurationOverride === '') return
+    setSetDurationSaveState('saving')
+    try {
+      const newEndDate = addDays(currentSet.startDate, parseInt(setDurationOverride))
+      await updateSet(currentSet.id, { endDate: newEndDate })
+      setDurationOverrideInitRef.current = setDurationOverride
+      setSetDurationSaveState('saved')
+      setTimeout(() => setSetDurationSaveState('idle'), 2000)
+    } catch {
+      setSetDurationSaveState('error')
+      setTimeout(() => setSetDurationSaveState('idle'), 3000)
     }
   }
 
   const handleStartNewSet = () => {
     const num = parseInt(newSetNumber)
-    if (isNaN(num) || num < 1) return
+    if (isNaN(num) || num < 1) {
+      setNewSetError('Enter a valid set number')
+      return
+    }
+    const dur = parseInt(newSetDuration)
+    if (isNaN(dur) || dur < 1 || dur > 90) {
+      setNewSetError('Duration must be between 1 and 90 days')
+      return
+    }
+    setNewSetError(null)
     setConfirmNewSet(num)
   }
 
   const confirmStartNewSet = async () => {
     if (confirmNewSet === null) return
     try {
-      await startNewSet(confirmNewSet)
-      setNewSetNumber('')
+      const dur = parseInt(newSetDuration)
+      await startNewSet(confirmNewSet, todayLocalDate(), dur)
+      setNewSetNumber(String(confirmNewSet + 1))
+      setNewSetDuration(String(treatment?.defaultSetDurationDays ?? 7))
       setConfirmNewSet(null)
     } catch (e: unknown) {
-      setSaveError((e as Error).message)
+      setNewSetError((e as Error).message)
       setConfirmNewSet(null)
     }
   }
@@ -135,34 +310,62 @@ export default function SettingsPageView() {
         </span>
       </div>
 
-      {saveError && (
-        <div style={{
-          background: 'var(--rose-bg)', border: '1px solid rgba(248,113,113,0.2)',
-          borderRadius: 12, padding: '12px 14px', fontSize: 13, color: 'var(--rose)',
-        }}>
-          {saveError}
-        </div>
-      )}
-
       {/* Wear goal */}
       <div style={sectionStyle}>
         <span style={sectionTitleStyle}>Wear Goal</span>
+
         <div>
-          <label style={labelStyle}>Daily wear goal (hours)</label>
-          <input type="number" min="1" max="24" step="0.5" value={goalHours}
-            onChange={e => setGoalHours(parseFloat(e.target.value))} />
+          <label style={labelStyle}>Daily wear goal</label>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <div style={{ flex: 1 }}>
+              <input
+                type="number" min="0" max="23" value={goalHours}
+                onChange={e => setGoalHours(Math.max(0, Math.min(23, parseInt(e.target.value) || 0)))}
+                onBlur={() => touch('goalHours')}
+                style={{ width: '100%' }}
+              />
+              <p style={{ fontSize: 11, color: 'var(--text-faint)', margin: '4px 0 0', textAlign: 'center' }}>hours</p>
+            </div>
+            <span style={{ color: 'var(--text-muted)', fontSize: 18, fontWeight: 300, paddingBottom: 18 }}>:</span>
+            <div style={{ flex: 1 }}>
+              <input
+                type="number" min="0" max="59" step="5" value={goalMins}
+                onChange={e => setGoalMins(Math.max(0, Math.min(59, parseInt(e.target.value) || 0)))}
+                onBlur={() => touch('goalMins')}
+                style={{ width: '100%' }}
+              />
+              <p style={{ fontSize: 11, color: 'var(--text-faint)', margin: '4px 0 0', textAlign: 'center' }}>minutes</p>
+            </div>
+          </div>
+          {(touched.goalHours || touched.goalMins) && <FieldError message={goalError} />}
         </div>
+
         <div>
           <label style={labelStyle}>Reminder threshold (minutes)</label>
-          <input type="number" min="5" max="120" value={reminderMins}
-            onChange={e => setReminderMins(parseInt(e.target.value))} />
+          <input
+            type="number" min="5" max="120" value={reminderMins}
+            onChange={e => setReminderMins(parseInt(e.target.value) || 0)}
+            onBlur={() => touch('reminderMins')}
+          />
+          {touched.reminderMins && <FieldError message={reminderError} />}
         </div>
+
         <div>
           <label style={labelStyle}>Auto-cap duration (minutes)</label>
-          <input type="number" min="30" max="480" value={autoCapMins}
-            onChange={e => setAutoCapMins(parseInt(e.target.value))} />
+          <input
+            type="number" min="30" max="480" value={autoCapMins}
+            onChange={e => setAutoCapMins(parseInt(e.target.value) || 0)}
+            onBlur={() => touch('autoCapMins')}
+          />
+          {touched.autoCapMins && <FieldError message={autoCapError} />}
         </div>
-        <button onClick={saveProfile} style={primaryBtn}>Save Preferences</button>
+
+        <SaveButton
+          state={profileHasErrors ? 'idle' : profileSaveState}
+          dirty={profileDirty}
+          idleLabel="Save Preferences"
+          onClick={saveProfile}
+        />
       </div>
 
       {/* Treatment */}
@@ -175,11 +378,62 @@ export default function SettingsPageView() {
         </div>
         <div>
           <label style={labelStyle}>Default set duration (days)</label>
-          <input type="number" min="1" max="30" value={defaultDuration}
-            onChange={e => setDefaultDuration(parseInt(e.target.value))} />
+          <input
+            type="number" min="1" max="30" value={defaultDuration}
+            onChange={e => setDefaultDuration(parseInt(e.target.value) || 1)}
+            onBlur={() => touch('defaultDuration')}
+          />
+          {touched.defaultDuration && <FieldError message={durationError} />}
         </div>
-        <button onClick={saveTreatment} style={primaryBtn}>Save Treatment Settings</button>
+        <SaveButton
+          state={treatmentHasErrors ? 'idle' : treatmentSaveState}
+          dirty={treatmentDirty}
+          idleLabel="Save Treatment Settings"
+          onClick={saveTreatment}
+        />
       </div>
+
+      {/* Current set duration override */}
+      {treatment && (() => {
+        const currentSet = sets.find(s => s.setNumber === treatment.currentSetNumber)
+        const defaultDur = treatment.defaultSetDurationDays
+        const currentDur = currentSet?.endDate ? dateDiffDays(currentSet.startDate, currentSet.endDate) : defaultDur
+        const overrideDirty = setDurationOverride !== setDurationOverrideInitRef.current
+        const overrideError = setDurationOverride !== '' && (
+          parseInt(setDurationOverride) < 1 ? 'Minimum 1 day' :
+          parseInt(setDurationOverride) > 90 ? 'Maximum 90 days' :
+          undefined
+        )
+        return (
+          <div style={sectionStyle}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+              <span style={sectionTitleStyle}>Current Set</span>
+              <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Set {treatment.currentSetNumber}</span>
+            </div>
+            <div>
+              <label style={labelStyle}>Duration (days)</label>
+              <input
+                type="number" min="1" max="90"
+                value={setDurationOverride}
+                placeholder={`${currentDur} days`}
+                onChange={e => setSetDurationOverride(e.target.value)}
+              />
+              <p style={{ fontSize: 11, color: 'var(--text-faint)', margin: '5px 0 0' }}>
+                {currentSet?.endDate
+                  ? `Ends ${currentSet.endDate} · ${currentDur} days`
+                  : `No end date set — enter days to set a duration.`}
+              </p>
+              {overrideError && <FieldError message={overrideError as string} />}
+            </div>
+            <SaveButton
+              state={overrideError ? 'idle' : setDurationSaveState}
+              dirty={overrideDirty}
+              idleLabel="Save Duration"
+              onClick={saveSetDurationOverride}
+            />
+          </div>
+        )
+      })()}
 
       {/* Switch set */}
       <div style={sectionStyle}>
@@ -187,17 +441,28 @@ export default function SettingsPageView() {
         <div>
           <label style={labelStyle}>New set number</label>
           <input type="number" min="1" value={newSetNumber}
-            onChange={e => setNewSetNumber(e.target.value)}
+            onChange={e => { setNewSetNumber(e.target.value); setNewSetError(null) }}
             placeholder={`e.g. ${(treatment?.currentSetNumber ?? 0) + 1}`} />
         </div>
-        {/* FIX SF-2: in-UI confirmation, no window.confirm() */}
+        <div>
+          <label style={labelStyle}>Duration (days)</label>
+          <input type="number" min="1" max="90" value={newSetDuration}
+            onChange={e => { setNewSetDuration(e.target.value); setNewSetError(null) }}
+          />
+          {newSetDuration !== '' && parseInt(newSetDuration) !== (treatment?.defaultSetDurationDays ?? 7) && (
+            <p style={{ fontSize: 11, color: 'var(--amber)', margin: '4px 0 0' }}>
+              Override: {newSetDuration} days (default is {treatment?.defaultSetDurationDays ?? 7})
+            </p>
+          )}
+        </div>
+        <FieldError message={newSetError ?? undefined} />
         {confirmNewSet !== null ? (
           <div style={{
             background: 'var(--amber-bg)', border: '1px solid rgba(252,211,77,0.2)',
             borderRadius: 12, padding: '14px', display: 'flex', flexDirection: 'column', gap: 12,
           }}>
             <p style={{ fontSize: 13, color: 'var(--amber)', fontWeight: 500, textAlign: 'center' }}>
-              Start Set {confirmNewSet}? This will close Set {treatment?.currentSetNumber}.
+              Start Set {confirmNewSet} ({newSetDuration} days)? This will close Set {treatment?.currentSetNumber}.
             </p>
             <div style={{ display: 'flex', gap: 10 }}>
               <button onClick={() => setConfirmNewSet(null)}
@@ -224,9 +489,21 @@ export default function SettingsPageView() {
         {notifGranted ? (
           <p style={{ fontSize: 13, color: 'var(--green)' }}>Push notifications enabled ✓</p>
         ) : (
-          <button onClick={handleRequestNotifications} style={secondaryBtn}>
-            Enable Push Notifications
-          </button>
+          <>
+            {(() => {
+              const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent) ||
+                (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+              return isIOS ? (
+                <p style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.5 }}>
+                  Push notifications are not supported on iPhone or iPad. In-app reminders will still fire while the app is open.
+                </p>
+              ) : (
+                <button onClick={handleRequestNotifications} style={secondaryBtn}>
+                  Enable Push Notifications
+                </button>
+              )
+            })()}
+          </>
         )}
       </div>
 

@@ -4,7 +4,7 @@ import { useAuthContext } from '../contexts/AuthContext'
 import { useSets } from '../hooks/useSets'
 import { update, ref, db } from '../services/firebase'
 import { localDB } from '../services/db'
-import { nowISO } from '../utils/time'
+import { nowISO, todayLocalDate } from '../utils/time'
 import {
   DEFAULT_REMINDER_THRESHOLD_MINUTES,
   DEFAULT_AUTO_CAP_MINUTES,
@@ -62,7 +62,7 @@ export default function OnboardingView() {
       await update(ref(db, `users/${user.uid}/treatment`), treatment)
       await localDB.treatment.put({ ...treatment, uid: user.uid })
 
-      await startNewSet(setNum)
+      await startNewSet(setNum, todayLocalDate(), DEFAULT_SET_DURATION_DAYS)
       navigate('/', { replace: true })
     } catch (e: unknown) {
       setError((e as Error).message)

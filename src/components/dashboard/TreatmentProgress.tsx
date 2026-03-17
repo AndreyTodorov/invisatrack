@@ -3,6 +3,8 @@ import type { Treatment } from '../../types'
 interface Props {
   treatment: Treatment | null
   defaultSetDurationDays: number
+  avgWearPct?: number  // avg wear % for the current set
+  goalMinutes?: number
 }
 
 function estimatedCompletion(treatment: Treatment, defaultDuration: number): string {
@@ -14,7 +16,7 @@ function estimatedCompletion(treatment: Treatment, defaultDuration: number): str
   return completion.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
 }
 
-export default function TreatmentProgress({ treatment, defaultSetDurationDays }: Props) {
+export default function TreatmentProgress({ treatment, defaultSetDurationDays, avgWearPct, goalMinutes }: Props) {
   if (!treatment) return null
 
   const { currentSetNumber, totalSets, currentSetStartDate } = treatment
@@ -83,6 +85,29 @@ export default function TreatmentProgress({ treatment, defaultSetDurationDays }:
           </span>
         )}
       </div>
+
+      {avgWearPct !== undefined && goalMinutes !== undefined && (() => {
+        const goalPct = (goalMinutes / 1440) * 100
+        const onTrack = avgWearPct >= goalPct
+        const diff = Math.abs(Math.round(avgWearPct - goalPct))
+        return (
+          <div style={{
+            marginTop: 10,
+            display: 'flex', alignItems: 'center', gap: 6,
+            padding: '8px 12px',
+            background: onTrack ? 'rgba(74,222,128,0.07)' : 'var(--amber-bg)',
+            border: `1px solid ${onTrack ? 'rgba(74,222,128,0.15)' : 'rgba(252,211,77,0.2)'}`,
+            borderRadius: 10,
+          }}>
+            <span style={{ fontSize: 13 }}>{onTrack ? '✓' : '⚠'}</span>
+            <span style={{ fontSize: 12, color: onTrack ? 'var(--green)' : 'var(--amber)', fontWeight: 500 }}>
+              {onTrack
+                ? `On track this set (avg ${Math.round(avgWearPct)}% wear)`
+                : `${diff}% below goal avg for this set`}
+            </span>
+          </div>
+        )
+      })()}
     </div>
   )
 }

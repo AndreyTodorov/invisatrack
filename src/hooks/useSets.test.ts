@@ -46,6 +46,11 @@ vi.mock('../utils/deviceId', () => ({
 
 vi.mock('../utils/time', () => ({
   nowISO: vi.fn(() => '2026-03-17T10:00:00.000Z'),
+  addDays: vi.fn((dateStr: string, days: number) => {
+    const d = new Date(dateStr + 'T00:00:00Z')
+    d.setUTCDate(d.getUTCDate() + days)
+    return d.toISOString().slice(0, 10)
+  }),
 }))
 
 import { set as fbSet, update as fbUpdate } from '../services/firebase'
@@ -57,9 +62,8 @@ import { useOnlineStatus } from './useOnlineStatus'
 const makeSet = (id: string, setNumber: number): AlignerSet => ({
   id,
   setNumber,
-  startDate: '2026-03-10T00:00:00.000Z',
+  startDate: '2026-03-10',
   endDate: null,
-  durationDaysOverride: null,
   note: null,
 })
 
@@ -83,16 +87,16 @@ beforeEach(() => {
 })
 
 describe('startNewSet', () => {
-  it('creates new set and updates treatment when online', async () => {
+  it('creates new set with pre-computed endDate when online', async () => {
     const { result } = renderHook(() => useSets())
-    await act(async () => { await result.current.startNewSet(1) })
+    await act(async () => { await result.current.startNewSet(1, '2026-03-17', 7) })
 
     expect(localDB.sets.put).toHaveBeenCalledWith(
-      expect.objectContaining({ setNumber: 1, uid: 'user1', endDate: null })
+      expect.objectContaining({ setNumber: 1, uid: 'user1', startDate: '2026-03-17', endDate: '2026-03-24' })
     )
     expect(localDB.treatment.update).toHaveBeenCalledWith(
       'user1',
-      expect.objectContaining({ currentSetNumber: 1 })
+      expect.objectContaining({ currentSetNumber: 1, currentSetStartDate: '2026-03-17' })
     )
     expect(fbSet).toHaveBeenCalled()
     expect(queueWrite).not.toHaveBeenCalled()
@@ -107,27 +111,27 @@ describe('startNewSet', () => {
     const { result } = renderHook(() => useSets())
 
     await expect(
-      act(async () => { await result.current.startNewSet(3) })
+      act(async () => { await result.current.startNewSet(3, '2026-03-17', 7) })
     ).rejects.toThrow('already exists')
   })
 
-  it('closes current set before starting new one', async () => {
+  it('closes legacy set (endDate=null) when starting new one', async () => {
     vi.mocked(useDataContext).mockReturnValue({
-      sets: [makeSet('s1', 3)],
+      sets: [makeSet('s1', 3)],  // makeSet has endDate: null (legacy)
       treatment: makeTreatment(3),
     } as never)
 
     const { result } = renderHook(() => useSets())
-    await act(async () => { await result.current.startNewSet(4) })
+    await act(async () => { await result.current.startNewSet(4, '2026-03-17', 7) })
 
-    // Closes old set
+    // Closes legacy set with the new set's startDate
     expect(localDB.sets.update).toHaveBeenCalledWith(
       's1',
-      expect.objectContaining({ endDate: '2026-03-17T10:00:00.000Z' })
+      expect.objectContaining({ endDate: '2026-03-17' })
     )
     // Creates new set
     expect(localDB.sets.put).toHaveBeenCalledWith(
-      expect.objectContaining({ setNumber: 4 })
+      expect.objectContaining({ setNumber: 4, startDate: '2026-03-17', endDate: '2026-03-24' })
     )
     // Updates treatment
     expect(localDB.treatment.update).toHaveBeenCalledWith(
@@ -136,11 +140,25 @@ describe('startNewSet', () => {
     )
   })
 
+  it('does not close non-legacy set (endDate already set)', async () => {
+    const setWithEndDate: AlignerSet = { id: 's1', setNumber: 3, startDate: '2026-03-10', endDate: '2026-03-17', note: null }
+    vi.mocked(useDataContext).mockReturnValue({
+      sets: [setWithEndDate],
+      treatment: makeTreatment(3),
+    } as never)
+
+    const { result } = renderHook(() => useSets())
+    await act(async () => { await result.current.startNewSet(4, '2026-03-17', 7) })
+
+    // Should NOT update the existing set since it already has endDate
+    expect(localDB.sets.update).not.toHaveBeenCalledWith('s1', expect.anything())
+  })
+
   it('queues writes when offline', async () => {
     vi.mocked(useOnlineStatus).mockReturnValue(false)
 
     const { result } = renderHook(() => useSets())
-    await act(async () => { await result.current.startNewSet(1) })
+    await act(async () => { await result.current.startNewSet(1, '2026-03-17', 7) })
 
     expect(fbSet).not.toHaveBeenCalled()
     expect(queueWrite).toHaveBeenCalled()
@@ -153,7 +171,7 @@ describe('startNewSet', () => {
     } as never)
 
     const { result } = renderHook(() => useSets())
-    await act(async () => { await result.current.startNewSet(1) })
+    await act(async () => { await result.current.startNewSet(1, '2026-03-17', 7) })
 
     expect(localDB.sets.update).not.toHaveBeenCalled()
     expect(localDB.sets.put).toHaveBeenCalledTimes(1)

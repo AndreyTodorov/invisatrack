@@ -62,7 +62,7 @@ describe('DailySummary', () => {
     expect(screen.getByText('01:30:00')).toBeInTheDocument()
   })
 
-  it('shows 00:00:00 for Budget Left when budget is exhausted, not a negative value', () => {
+  it('shows Over Limit with overage when budget is exceeded', () => {
     render(
       <DailySummary
         totalOffMinutes={100}
@@ -72,9 +72,9 @@ describe('DailySummary', () => {
         activeMinutes={40}
       />
     )
-    // 120 - 100 - 40 = -20 → clamped to 0 → 00:00:00
-    const budgetLabel = screen.getByText('Budget Left')
-    expect(budgetLabel.previousElementSibling?.textContent).toBe('00:00:00')
+    // usedOff = 140, maxOff = 120 → overBudget = 20 min = 00:20:00
+    const overLabel = screen.getByText('Over Limit')
+    expect(overLabel.previousElementSibling?.textContent).toBe('+00:20:00')
   })
 
   it('defaults activeMinutes to 0 when prop is omitted', () => {

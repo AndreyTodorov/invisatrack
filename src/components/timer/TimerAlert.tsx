@@ -1,9 +1,10 @@
 interface Props {
   thresholdMinutes: number
   onDismiss: () => void
+  onSnooze: () => void
 }
 
-export default function TimerAlert({ thresholdMinutes, onDismiss }: Props) {
+export default function TimerAlert({ thresholdMinutes, onDismiss, onSnooze }: Props) {
   return (
     <div style={{
       position: 'fixed', inset: 0,
@@ -43,24 +44,43 @@ export default function TimerAlert({ thresholdMinutes, onDismiss }: Props) {
         <p style={{ fontSize: 14, color: 'var(--text-muted)', marginBottom: 28, lineHeight: 1.6 }}>
           Aligners have been out for <strong style={{ color: 'var(--text)' }}>{thresholdMinutes} minutes</strong>.
         </p>
-        <button
-          onClick={onDismiss}
-          style={{
-            width: '100%',
-            background: 'var(--rose)',
-            color: '#fff',
-            border: 'none',
-            borderRadius: 14,
-            padding: '14px 0',
-            fontSize: 15,
-            fontWeight: 600,
-            fontFamily: 'inherit',
-            cursor: 'pointer',
-            letterSpacing: '0.02em',
-          }}
-        >
-          Got it
-        </button>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <button
+            onClick={onDismiss}
+            style={{
+              width: '100%',
+              background: 'var(--rose)',
+              color: '#fff',
+              border: 'none',
+              borderRadius: 14,
+              padding: '14px 0',
+              fontSize: 15,
+              fontWeight: 600,
+              fontFamily: 'inherit',
+              cursor: 'pointer',
+              letterSpacing: '0.02em',
+            }}
+          >
+            Got it
+          </button>
+          <button
+            onClick={onSnooze}
+            style={{
+              width: '100%',
+              background: 'transparent',
+              color: 'var(--text-muted)',
+              border: '1px solid var(--border-strong)',
+              borderRadius: 14,
+              padding: '12px 0',
+              fontSize: 14,
+              fontWeight: 500,
+              fontFamily: 'inherit',
+              cursor: 'pointer',
+            }}
+          >
+            Snooze 10 min
+          </button>
+        </div>
       </div>
     </div>
   )

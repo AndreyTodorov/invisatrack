@@ -15,8 +15,10 @@ const RING_C = 2 * Math.PI * RING_R
 
 export default function DailySummary({ totalOffMinutes, removals, goalMinutes, streak, activeMinutes = 0 }: Props) {
   const maxOffMinutes = MINUTES_PER_DAY - goalMinutes
-  const budgetRemainingMinutes = Math.max(0, maxOffMinutes - totalOffMinutes - activeMinutes)
-  const budgetPct = Math.min(100, ((totalOffMinutes + activeMinutes) / maxOffMinutes) * 100)
+  const usedOffMinutes = totalOffMinutes + activeMinutes
+  const budgetRemainingMinutes = Math.max(0, maxOffMinutes - usedOffMinutes)
+  const overBudgetMinutes = Math.max(0, usedOffMinutes - maxOffMinutes)
+  const budgetPct = Math.min(100, (usedOffMinutes / maxOffMinutes) * 100)
 
   const wearMinutes = MINUTES_PER_DAY - totalOffMinutes - activeMinutes
   const wearPct = Math.min(100, (wearMinutes / goalMinutes) * 100)
@@ -28,7 +30,7 @@ export default function DailySummary({ totalOffMinutes, removals, goalMinutes, s
   const stats = [
     {
       label: 'Off Time',
-      value: formatDuration(totalOffMinutes + activeMinutes),
+      value: formatDuration(usedOffMinutes),
       color: activeMinutes > 0 ? 'var(--cyan)' : 'var(--text)',
     },
     {
@@ -36,11 +38,9 @@ export default function DailySummary({ totalOffMinutes, removals, goalMinutes, s
       value: String(removals),
       color: 'var(--text)',
     },
-    {
-      label: 'Budget Left',
-      value: formatDuration(budgetRemainingMinutes),
-      color: budgetColor,
-    },
+    overBudgetMinutes > 0
+      ? { label: 'Over Limit', value: `+${formatDuration(overBudgetMinutes)}`, color: 'var(--rose)' }
+      : { label: 'Budget Left', value: formatDuration(budgetRemainingMinutes), color: budgetColor },
   ]
 
   return (

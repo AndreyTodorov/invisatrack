@@ -49,14 +49,14 @@ export default function TimerButton({ isRunning, onPress, disabled, budgetPercen
           cx="100" cy="100" r={RING_R}
           fill="none"
           stroke="rgba(255,255,255,0.05)"
-          strokeWidth="2.5"
+          strokeWidth="5"
         />
         {/* Budget arc — shrinks as budget is consumed */}
         <circle
           cx="100" cy="100" r={RING_R}
           fill="none"
           stroke={color}
-          strokeWidth="2.5"
+          strokeWidth="5"
           strokeLinecap="round"
           strokeDasharray={`${RING_C}`}
           strokeDashoffset={`${dashOffset}`}

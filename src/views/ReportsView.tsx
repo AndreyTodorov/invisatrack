@@ -5,6 +5,56 @@ import WearChart from '../components/reports/WearChart'
 import StatsGrid from '../components/reports/StatsGrid'
 import SetReportCard from '../components/reports/SetReportCard'
 import { DEFAULT_DAILY_WEAR_GOAL_MINUTES } from '../constants'
+import type { DailyStats } from '../types'
+
+function formatDayLabel(dateStr: string): string {
+  return new Date(dateStr + 'T12:00:00').toLocaleDateString('en-US', {
+    weekday: 'short', month: 'short', day: 'numeric',
+  })
+}
+
+function BestWorstCallout({ stats }: { stats: DailyStats[] }) {
+  if (stats.length < 2) return null
+
+  const best = stats.reduce((a, b) => a.wearPercentage >= b.wearPercentage ? a : b)
+  const worst = stats.reduce((a, b) => a.wearPercentage <= b.wearPercentage ? a : b)
+
+  // Only show if there's meaningful variance
+  if (best.date === worst.date) return null
+
+  return (
+    <div style={{ display: 'flex', gap: 8 }}>
+      <div style={{
+        flex: 1, background: 'var(--surface)', border: '1px solid var(--border)',
+        borderRadius: 14, padding: '12px 14px',
+      }}>
+        <div style={{ fontSize: 10, color: 'var(--text-muted)', fontWeight: 500, letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: 4 }}>
+          Best Day
+        </div>
+        <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--green)', fontFamily: "'JetBrains Mono', monospace" }}>
+          {Math.round(best.wearPercentage)}%
+        </div>
+        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
+          {formatDayLabel(best.date)}
+        </div>
+      </div>
+      <div style={{
+        flex: 1, background: 'var(--surface)', border: '1px solid var(--border)',
+        borderRadius: 14, padding: '12px 14px',
+      }}>
+        <div style={{ fontSize: 10, color: 'var(--text-muted)', fontWeight: 500, letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: 4 }}>
+          Worst Day
+        </div>
+        <div style={{ fontSize: 16, fontWeight: 700, color: worst.compliant ? 'var(--text)' : 'var(--rose)', fontFamily: "'JetBrains Mono', monospace" }}>
+          {Math.round(worst.wearPercentage)}%
+        </div>
+        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
+          {formatDayLabel(worst.date)}
+        </div>
+      </div>
+    </div>
+  )
+}
 
 type Period = '7d' | 'week' | 'month' | 'set'
 
@@ -51,7 +101,12 @@ export default function ReportsView() {
   const [period, setPeriod] = useState<Period>('7d')
   const { profile, sets } = useDataContext()
   const goalMinutes = profile?.dailyWearGoalMinutes ?? DEFAULT_DAILY_WEAR_GOAL_MINUTES
-  const { getDailyStatsRange, getSetStats } = useReports(goalMinutes)
+  const { getDailyStatsRange, getSetStats, allSegments } = useReports(goalMinutes)
+
+  // Earliest date any session was recorded
+  const firstSessionDate = allSegments.length > 0
+    ? allSegments.reduce((min, s) => s.date < min ? s.date : min, allSegments[0].date)
+    : null
 
   const tabs: { key: Period; label: string }[] = [
     { key: '7d', label: '7 Days' },
@@ -60,8 +115,14 @@ export default function ReportsView() {
     { key: 'set', label: 'By Set' },
   ]
 
+  const todayStr = getTodayLocal()
   const stats = period !== 'set'
-    ? getDailyStatsRange(getDateRange(period)).filter(s => s.removals > 0)
+    ? getDailyStatsRange(getDateRange(period)).filter(s => {
+        if (s.date > todayStr) return false
+        if (period === '7d') return s.removals > 0
+        // week/month: show all days from first session onwards (0-removal = wore all day)
+        return firstSessionDate !== null && s.date >= firstSessionDate
+      })
     : []
 
   return (
@@ -97,15 +158,21 @@ export default function ReportsView() {
       </div>
 
       {period !== 'set' && stats.length === 0 && (
-        <p style={{ color: 'var(--text-faint)', textAlign: 'center', padding: '40px 0', fontSize: 14 }}>
-          No sessions in this period
-        </p>
+        <div style={{ textAlign: 'center', padding: '40px 0' }}>
+          <p style={{ color: 'var(--text-faint)', fontSize: 14, marginBottom: 6 }}>
+            No sessions recorded{period === '7d' ? ' in the last 7 days' : period === 'week' ? ' this week' : ' this month'}.
+          </p>
+          <p style={{ color: 'var(--text-faint)', fontSize: 12 }}>
+            Start tracking wear time to see your data here.
+          </p>
+        </div>
       )}
 
       {period !== 'set' && stats.length > 0 && (
         <>
           <WearChart data={stats} goalMinutes={goalMinutes} />
           <StatsGrid stats={stats} />
+          <BestWorstCallout stats={stats} />
         </>
       )}
 

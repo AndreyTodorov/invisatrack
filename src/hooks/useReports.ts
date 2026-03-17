@@ -42,7 +42,15 @@ export function useReports(goalMinutes: number) {
   }, [allSegments, goalMinutes])
 
   const getSetStats = (setNumber: number) => {
-    const setSessions = sessions.filter(s => s.setNumber === setNumber && s.endTime !== null)
+    const targetSet = sets.find(s => s.setNumber === setNumber)
+    const setSessions = sessions.filter(s => {
+      if (!s.endTime) return false
+      if (!targetSet) return s.setNumber === setNumber
+      const sessionDate = formatDateKey(toLocalDate(s.startTime, s.startTimezoneOffset))
+      if (sessionDate < targetSet.startDate.slice(0, 10)) return false
+      if (targetSet.endDate && sessionDate >= targetSet.endDate.slice(0, 10)) return false
+      return true
+    })
     const setSegments = getSegmentsForSessions(setSessions)
     const uniqueDates = [...new Set(setSegments.map(s => s.date))]
     const statsArr = uniqueDates.map(d => computeDailyStats(d, setSegments, goalMinutes))
