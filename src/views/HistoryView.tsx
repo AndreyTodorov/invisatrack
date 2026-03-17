@@ -232,6 +232,8 @@ export default function HistoryView() {
           set={editingSet}
           stats={getSetStats(editingSet.setNumber)}
           isCurrent={editingSet.setNumber === treatment?.currentSetNumber}
+          prevSet={sets.find(s => s.setNumber === editingSet.setNumber - 1) ?? null}
+          nextSet={sets.find(s => s.setNumber === editingSet.setNumber + 1) ?? null}
           onClose={() => setEditingSet(null)}
         />
       )}

@@ -12,6 +12,8 @@ interface Props {
     avgRemovalsPerDay: number
   }
   isCurrent: boolean
+  prevSet: AlignerSet | null
+  nextSet: AlignerSet | null
   onClose: () => void
 }
 
@@ -27,7 +29,7 @@ const btnBase: React.CSSProperties = {
   fontFamily: 'inherit', cursor: 'pointer',
 }
 
-export default function SetEditModal({ set, stats, isCurrent, onClose }: Props) {
+export default function SetEditModal({ set, stats, isCurrent, prevSet, nextSet, onClose }: Props) {
   const { updateSet } = useSets()
 
   const currentDays = set.endDate ? dateDiffDays(set.startDate, set.endDate) : null
@@ -45,28 +47,67 @@ export default function SetEditModal({ set, stats, isCurrent, onClose }: Props) 
 
   const startDateError = startDate === '' ? 'Required' : null
 
-  const canSave = !saving && !durationError && !startDateError
+  const computedEndDate = durationDays !== '' && !durationError ? addDays(startDate, durationNum) : null
+
+  // What changed relative to the saved set
+  const startChanged = startDate !== set.startDate.slice(0, 10)
+  // endChanged: true whenever the computed end date differs from the saved one.
+  // If set.endDate is null (legacy open set), any computed end date counts as changed —
+  // this is intentional: first-time setting an end date should cascade to the next set.
+  const endChanged = computedEndDate !== null && computedEndDate !== set.endDate?.slice(0, 10)
+
+  // Advisory text shown inline near each field
+  const prevAdjustNote = startChanged && prevSet
+    ? `Set ${prevSet.setNumber} end date will adjust to ${startDate}`
+    : null
+  const nextAdjustNote = endChanged && nextSet
+    ? `Set ${nextSet.setNumber} start date will adjust to ${computedEndDate}`
+    : null
+
+  // Overshoot validation (blocks save)
+  const prevOvershotError = startChanged && prevSet
+    && startDate <= prevSet.startDate.slice(0, 10)
+    ? `Start date must be after Set ${prevSet.setNumber}'s start (${prevSet.startDate.slice(0, 10)})`
+    : null
+
+  // nextOvershotError is only checked when nextSet.endDate is non-null.
+  // If the next set is a legacy open set (endDate: null), no overshoot check is applied —
+  // the cascade still sets nextSet.startDate but there's no upper bound to validate against.
+  const nextOvershotError = computedEndDate !== null && nextSet?.endDate
+    && computedEndDate >= nextSet.endDate.slice(0, 10)
+    ? `End date must be before Set ${nextSet.setNumber}'s end (${nextSet.endDate.slice(0, 10)})`
+    : null
+
+  const adjacencyError = prevOvershotError ?? nextOvershotError ?? null
+
+  const canSave = !saving && !durationError && !startDateError && !adjacencyError
 
   const handleSave = async () => {
     if (!canSave) return
     setSaving(true)
     setError(null)
     try {
-      const newEndDate = durationDays !== '' ? addDays(startDate, durationNum) : null
       const updates: Partial<Pick<AlignerSet, 'startDate' | 'endDate' | 'note'>> = {
         startDate,
-        endDate: newEndDate,
+        endDate: computedEndDate,
         note: note.trim() || null,
       }
       await updateSet(set.id, updates)
+
+      // Adjust adjacent sets
+      if (startChanged && prevSet) {
+        await updateSet(prevSet.id, { endDate: startDate })
+      }
+      if (computedEndDate && endChanged && nextSet) {
+        await updateSet(nextSet.id, { startDate: computedEndDate })
+      }
+
       onClose()
     } catch (e: unknown) {
       setError((e as Error).message)
       setSaving(false)
     }
   }
-
-  const computedEndDate = durationDays !== '' && !durationError ? addDays(startDate, durationNum) : null
 
   return (
     <div style={{
@@ -125,12 +166,12 @@ export default function SetEditModal({ set, stats, isCurrent, onClose }: Props) 
           ))}
         </div>
 
-        {error && (
+        {(error || adjacencyError) && (
           <p style={{
             fontSize: 13, color: 'var(--rose)',
             background: 'var(--rose-bg)', border: '1px solid rgba(248,113,113,0.2)',
             borderRadius: 10, padding: '10px 14px', margin: 0,
-          }}>{error}</p>
+          }}>{error ?? adjacencyError}</p>
         )}
 
         <div>
@@ -141,6 +182,14 @@ export default function SetEditModal({ set, stats, isCurrent, onClose }: Props) 
             onChange={e => setStartDate(e.target.value)}
           />
           {startDateError && <p style={{ fontSize: 11, color: 'var(--rose)', margin: '4px 0 0' }}>{startDateError}</p>}
+          {prevAdjustNote && !prevOvershotError && (
+            <p style={{ fontSize: 11, color: 'var(--text-faint)', margin: '4px 0 0' }}>
+              → {prevAdjustNote}
+            </p>
+          )}
+          {prevOvershotError && (
+            <p style={{ fontSize: 11, color: 'var(--rose)', margin: '4px 0 0' }}>{prevOvershotError}</p>
+          )}
         </div>
 
         <div>
@@ -155,6 +204,14 @@ export default function SetEditModal({ set, stats, isCurrent, onClose }: Props) 
             <p style={{ fontSize: 11, color: 'var(--text-faint)', margin: '4px 0 0' }}>
               Ends {computedEndDate}
             </p>
+          )}
+          {nextAdjustNote && !nextOvershotError && (
+            <p style={{ fontSize: 11, color: 'var(--text-faint)', margin: '4px 0 0' }}>
+              → {nextAdjustNote}
+            </p>
+          )}
+          {nextOvershotError && (
+            <p style={{ fontSize: 11, color: 'var(--rose)', margin: '4px 0 0' }}>{nextOvershotError}</p>
           )}
           {durationError && <p style={{ fontSize: 11, color: 'var(--rose)', margin: '4px 0 0' }}>{durationError}</p>}
         </div>
