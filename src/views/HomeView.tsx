@@ -40,7 +40,10 @@ export default function HomeView() {
   const { sessions } = useSessions()
   const { streak, allSegments, getSetStats } = useReports(goalMinutes)
   const { autoAdvancedSets, dismiss: dismissAutoAdvance } = useAutoAdvanceSet()
-  const currentSetAvgWear = treatment ? getSetStats(treatment.currentSetNumber).avgWearPct : undefined
+  const currentSetStats = treatment ? getSetStats(treatment.currentSetNumber) : null
+  const currentSetAvgWear = currentSetStats && currentSetStats.totalRemovals > 0
+    ? currentSetStats.avgWearPct
+    : undefined
   const currentSetData = sets.find(s => s.setNumber === currentSet)
   const effectiveSetDuration = currentSetData?.endDate
     ? dateDiffDays(currentSetData.startDate, currentSetData.endDate)
