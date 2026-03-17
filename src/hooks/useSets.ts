@@ -6,7 +6,7 @@ import { useDataContext } from '../contexts/DataContext'
 import { useAuthContext } from '../contexts/AuthContext'
 import { useOnlineStatus } from './useOnlineStatus'
 import { getDeviceId } from '../utils/deviceId'
-import { nowISO, addDays } from '../utils/time'
+import { nowISO, addDays, todayLocalDate } from '../utils/time'
 import type { AlignerSet, Treatment } from '../types'
 
 export function useSets() {
@@ -23,8 +23,8 @@ export function useSets() {
     const now = nowISO()
     const endDate = addDays(startDateStr, durationDays)
 
-    // Only close legacy sets that have no endDate pre-computed
-    if (treatment?.currentSetNumber) {
+    // Only close legacy sets when the new set is starting today or earlier
+    if (startDateStr <= todayLocalDate() && treatment?.currentSetNumber) {
       const currentSet = sets.find(s => s.setNumber === treatment.currentSetNumber)
       if (currentSet && currentSet.endDate === null) {
         const path = `users/${uid}/sets/${currentSet.id}`
@@ -50,15 +50,17 @@ export function useSets() {
     if (online) await set(ref(db, path), newSet)
     else await queueWrite({ operation: 'set', path, data: newSet, timestamp: now, deviceId })
 
-    // Update treatment
-    const treatmentUpdates: Partial<Treatment> = {
-      currentSetNumber: setNumber,
-      currentSetStartDate: startDateStr,
+    // Only advance current set if the new set starts today or earlier
+    if (startDateStr <= todayLocalDate()) {
+      const treatmentUpdates: Partial<Treatment> = {
+        currentSetNumber: setNumber,
+        currentSetStartDate: startDateStr,
+      }
+      await localDB.treatment.update(uid, treatmentUpdates)
+      const treatPath = `users/${uid}/treatment`
+      if (online) await update(ref(db, treatPath), treatmentUpdates)
+      else await queueWrite({ operation: 'update', path: treatPath, data: treatmentUpdates, timestamp: now, deviceId })
     }
-    await localDB.treatment.update(uid, treatmentUpdates)
-    const treatPath = `users/${uid}/treatment`
-    if (online) await update(ref(db, treatPath), treatmentUpdates)
-    else await queueWrite({ operation: 'update', path: treatPath, data: treatmentUpdates, timestamp: now, deviceId })
   }, [uid, online, deviceId, sets, treatment])
 
   const updateTreatment = useCallback(async (updates: Partial<Treatment>) => {
