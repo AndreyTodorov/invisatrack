@@ -7,7 +7,7 @@ import SessionEditModal from '../components/sessions/SessionEditModal'
 import AddSessionModal from '../components/sessions/AddSessionModal'
 import SetEditModal from '../components/sets/SetEditModal'
 import StartNewSetModal from '../components/sets/StartNewSetModal'
-import { toLocalDate, formatDateKey, formatDurationShort, diffMinutes, dateDiffDays } from '../utils/time'
+import { toLocalDate, formatDateKey, formatDurationShort, diffMinutes, dateDiffDays, todayLocalDate } from '../utils/time'
 import { DEFAULT_DAILY_WEAR_GOAL_MINUTES } from '../constants'
 import type { Session, AlignerSet } from '../types'
 
@@ -154,6 +154,7 @@ export default function HistoryView() {
             {sortedSets.map(s => {
               const stats = getSetStats(s.setNumber)
               const isCurrent = s.setNumber === treatment?.currentSetNumber
+                && s.startDate.slice(0, 10) <= todayLocalDate()
               const duration = s.endDate ? dateDiffDays(s.startDate, s.endDate) : null
               const startStr = s.startDate.slice(0, 10)
               const dateRange = s.endDate
@@ -231,7 +232,8 @@ export default function HistoryView() {
         <SetEditModal
           set={editingSet}
           stats={getSetStats(editingSet.setNumber)}
-          isCurrent={editingSet.setNumber === treatment?.currentSetNumber}
+          isCurrent={editingSet.setNumber === treatment?.currentSetNumber
+            && editingSet.startDate.slice(0, 10) <= todayLocalDate()}
           prevSet={sets
             .filter(s => s.id !== editingSet.id && s.startDate.slice(0, 10) < editingSet.startDate.slice(0, 10))
             .sort((a, b) => b.startDate.localeCompare(a.startDate))[0] ?? null}
