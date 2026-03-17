@@ -11,9 +11,9 @@ export function scheduleReminderNotification(thresholdMinutes: number): void {
   cancelScheduledNotification()
   if (Notification.permission !== 'granted') return
   scheduledTimer = setTimeout(() => {
-    new Notification('AlignerTrack Reminder', {
+    new Notification('InvisaTrack Reminder', {
       body: `Your aligners have been out for ${thresholdMinutes} minutes!`,
-      icon: '/invisalign/icon-192.png',
+      icon: '/invisatrack/icon-192.png',
     })
   }, thresholdMinutes * 60 * 1000)
 }

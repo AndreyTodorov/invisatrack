@@ -4,8 +4,8 @@ on:
   pull_request:
     branches: ["**"]
 
-  push:
-    branches: ["main", "develop"]
+  # push:
+  #   branches: ["main", "develop"]
 
   workflow_dispatch:
 

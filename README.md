@@ -1,6 +1,6 @@
-# AlignerTrack
+# InvisaTrack
 
-A Progressive Web App for tracking Invisalign aligner wear time. Logs removal sessions, computes daily compliance, tracks streaks, and visualises per-set analytics — with full offline support.
+A Progressive Web App for tracking aligner wear time. Logs removal sessions, computes daily compliance, tracks streaks, and visualises per-set analytics — with full offline support.
 
 ---
 
