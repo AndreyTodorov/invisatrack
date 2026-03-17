@@ -1,0 +1,26 @@
+{
+  "rules": {
+    "users": {
+      "$uid": {
+        ".read": "$uid === auth.uid",
+        ".write": "$uid === auth.uid",
+        "sessions": {
+          "$sessionId": {
+            ".validate": "newData.hasChildren(['startTime', 'setNumber', 'deviceId', 'updatedAt', 'autoCapped', 'createdOffline']) && newData.child('setNumber').isNumber() && newData.child('startTime').isString() && newData.child('updatedAt').isString()"
+          }
+        },
+        "sets": {
+          "$setId": {
+            ".validate": "newData.hasChildren(['setNumber', 'startDate']) && newData.child('setNumber').isNumber() && newData.child('startDate').isString()"
+          }
+        },
+        "profile": {
+          ".validate": "newData.hasChildren(['dailyWearGoalMinutes', 'reminderThresholdMinutes', 'autoCapMinutes']) && newData.child('dailyWearGoalMinutes').isNumber() && newData.child('reminderThresholdMinutes').isNumber() && newData.child('autoCapMinutes').isNumber()"
+        },
+        "treatment": {
+          ".validate": "newData.hasChildren(['currentSetNumber', 'defaultSetDurationDays', 'currentSetStartDate']) && newData.child('currentSetNumber').isNumber() && newData.child('defaultSetDurationDays').isNumber()"
+        }
+      }
+    }
+  }
+}
