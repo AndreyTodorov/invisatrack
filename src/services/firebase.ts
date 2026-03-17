@@ -1,9 +1,9 @@
 import { initializeApp } from 'firebase/app'
 import {
-  getAuth, GoogleAuthProvider, signInWithPopup, signOut,
+  getAuth, GoogleAuthProvider, signInWithPopup, signOut, connectAuthEmulator,
 } from 'firebase/auth'
 import {
-  getDatabase, ref, set, update, remove, get, onValue, push,
+  getDatabase, ref, set, update, remove, get, onValue, push, connectDatabaseEmulator,
 } from 'firebase/database'
 
 const firebaseConfig = {
@@ -19,6 +19,11 @@ const app = initializeApp(firebaseConfig)
 export const auth = getAuth(app)
 export const db = getDatabase(app)
 export const googleProvider = new GoogleAuthProvider()
+
+if (import.meta.env.VITE_USE_EMULATOR === 'true') {
+  connectAuthEmulator(auth, 'http://localhost:9099', { disableWarnings: true })
+  connectDatabaseEmulator(db, 'localhost', 9000)
+}
 
 export const signInWithGoogle = () => signInWithPopup(auth, googleProvider)
 export const signOutUser = () => signOut(auth)
