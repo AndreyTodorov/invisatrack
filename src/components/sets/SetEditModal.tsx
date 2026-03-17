@@ -30,7 +30,7 @@ const btnBase: React.CSSProperties = {
 }
 
 export default function SetEditModal({ set, stats, isCurrent, prevSet, nextSet, onClose }: Props) {
-  const { updateSet, updateTreatment, sets } = useSets()
+  const { updateSet, updateTreatment, deleteSet, sets } = useSets()
 
   const currentDays = set.endDate ? dateDiffDays(set.startDate, set.endDate) : null
   const [startDate, setStartDate] = useState(set.startDate.slice(0, 10))
@@ -39,6 +39,9 @@ export default function SetEditModal({ set, stats, isCurrent, prevSet, nextSet, 
   const [setNumber, setSetNumberState] = useState(String(set.setNumber))
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  type ModalView = 'edit' | 'confirmDelete' | 'pickCurrent'
+  const [view, setView] = useState<ModalView>('edit')
+  const [deleting, setDeleting] = useState(false)
 
   const setNumberVal = parseInt(setNumber)
   const setNumberError =
@@ -124,6 +127,29 @@ export default function SetEditModal({ set, stats, isCurrent, prevSet, nextSet, 
       setError((e as Error).message)
       setSaving(false)
     }
+  }
+
+  const handleDelete = async () => {
+    setDeleting(true)
+    try {
+      await deleteSet(set.id)
+      if (isCurrent) {
+        setView('pickCurrent')
+      } else {
+        onClose()
+      }
+    } catch (e: unknown) {
+      setError((e as Error).message)
+      setDeleting(false)
+    }
+  }
+
+  const handlePickCurrent = async (pickedSet: AlignerSet) => {
+    await updateTreatment({
+      currentSetNumber: pickedSet.setNumber,
+      currentSetStartDate: pickedSet.startDate.slice(0, 10),
+    })
+    onClose()
   }
 
   return (
@@ -254,24 +280,106 @@ export default function SetEditModal({ set, stats, isCurrent, prevSet, nextSet, 
           />
         </div>
 
-        <div style={{ display: 'flex', gap: 10 }}>
-          <button onClick={onClose} style={{ ...btnBase, background: 'var(--surface-3)', color: 'var(--text-muted)', border: '1px solid var(--border)' }}>
-            Cancel
-          </button>
-          <button
-            onClick={handleSave}
-            disabled={!canSave}
-            style={{
-              ...btnBase,
-              background: canSave ? 'var(--cyan)' : 'var(--surface-3)',
-              color: canSave ? '#06090f' : 'var(--text-faint)',
-              border: canSave ? 'none' : '1px solid var(--border)',
-              cursor: canSave ? 'pointer' : 'default',
-            }}
-          >
-            {saving ? 'Saving…' : 'Save'}
-          </button>
-        </div>
+        {view === 'edit' && (
+          <>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button onClick={onClose} style={{ ...btnBase, background: 'var(--surface-3)', color: 'var(--text-muted)', border: '1px solid var(--border)' }}>
+                Cancel
+              </button>
+              <button
+                onClick={handleSave}
+                disabled={!canSave}
+                style={{
+                  ...btnBase,
+                  background: canSave ? 'var(--cyan)' : 'var(--surface-3)',
+                  color: canSave ? '#06090f' : 'var(--text-faint)',
+                  border: canSave ? 'none' : '1px solid var(--border)',
+                  cursor: canSave ? 'pointer' : 'default',
+                }}
+              >
+                {saving ? 'Saving…' : 'Save'}
+              </button>
+            </div>
+            <button
+              onClick={() => setView('confirmDelete')}
+              style={{
+                width: '100%', border: '1px solid rgba(248,113,113,0.3)',
+                borderRadius: 12, padding: '13px 0', fontSize: 14, fontWeight: 600,
+                fontFamily: 'inherit', cursor: 'pointer',
+                background: 'transparent', color: 'var(--rose)',
+              }}
+            >
+              Delete Set
+            </button>
+          </>
+        )}
+
+        {view === 'confirmDelete' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <div style={{
+              background: 'var(--rose-bg)', border: '1px solid rgba(248,113,113,0.25)',
+              borderRadius: 12, padding: 16, textAlign: 'center',
+            }}>
+              <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--rose)', margin: '0 0 6px' }}>
+                Delete Set {set.setNumber}?
+              </p>
+              {stats.totalRemovals > 0 && (
+                <p style={{ fontSize: 13, color: 'var(--text-muted)', margin: 0, lineHeight: 1.5 }}>
+                  {stats.totalRemovals} session{stats.totalRemovals === 1 ? '' : 's'} during this set will remain in history but won't be grouped under a set.
+                </p>
+              )}
+            </div>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button
+                onClick={() => setView('edit')}
+                style={{ ...btnBase, background: 'var(--surface-3)', color: 'var(--text-muted)', border: '1px solid var(--border)' }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={deleting}
+                style={{ ...btnBase, background: 'var(--rose)', border: 'none', color: '#fff', cursor: deleting ? 'default' : 'pointer' }}
+              >
+                {deleting ? 'Deleting…' : 'Delete'}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {view === 'pickCurrent' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div>
+              <p style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', margin: '0 0 4px' }}>
+                Set {set.setNumber} deleted.
+              </p>
+              <p style={{ fontSize: 13, color: 'var(--text-muted)', margin: 0 }}>
+                Which set are you currently wearing?
+              </p>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {[...sets]
+                .filter(s => s.id !== set.id)
+                .sort((a, b) => b.setNumber - a.setNumber)
+                .map(s => (
+                  <button
+                    key={s.id}
+                    onClick={() => handlePickCurrent(s)}
+                    style={{
+                      background: 'var(--surface-2)', border: '1px solid var(--border)',
+                      borderRadius: 12, padding: '14px 16px', textAlign: 'left',
+                      fontFamily: 'inherit', cursor: 'pointer', width: '100%',
+                    }}
+                  >
+                    <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>Set {s.setNumber}</div>
+                    <div style={{ fontSize: 12, color: 'var(--text-faint)', marginTop: 2 }}>
+                      {s.startDate.slice(0, 10)}{s.endDate ? ` → ${s.endDate.slice(0, 10)}` : ' → ongoing'}
+                    </div>
+                  </button>
+                ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )
