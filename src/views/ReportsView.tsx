@@ -61,7 +61,9 @@ export default function ReportsView() {
     { key: 'set', label: 'By Set' },
   ]
 
-  const stats = period !== 'set' ? getDailyStatsRange(getDateRange(period)) : []
+  const stats = period !== 'set'
+    ? getDailyStatsRange(getDateRange(period)).filter(s => s.removals > 0)
+    : []
 
   return (
     <div className="p-4 space-y-4 max-w-md mx-auto">

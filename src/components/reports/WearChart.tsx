@@ -12,7 +12,7 @@ interface Props {
 
 export default function WearChart({ data, goalMinutes }: Props) {
   const chartData = data.map(d => ({
-    date: d.date.slice(5), // MM-DD
+    date: d.date.slice(8, 10) + '.' + d.date.slice(5, 7), // DD.MM
     wear: Math.round(d.wearPercentage),
   }))
 
