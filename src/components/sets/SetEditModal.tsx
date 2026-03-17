@@ -60,7 +60,7 @@ export default function SetEditModal({ set, stats, isCurrent, prevSet, nextSet, 
   const prevAdjustNote = startChanged && prevSet
     ? `Set ${prevSet.setNumber} end date will adjust to ${startDate}`
     : null
-  const nextAdjustNote = endChanged && nextSet
+  const nextAdjustNote = endChanged && nextSet && computedEndDate
     ? `Set ${nextSet.setNumber} start date will adjust to ${computedEndDate}`
     : null
 
@@ -166,12 +166,12 @@ export default function SetEditModal({ set, stats, isCurrent, prevSet, nextSet, 
           ))}
         </div>
 
-        {(error || adjacencyError) && (
+        {error && (
           <p style={{
             fontSize: 13, color: 'var(--rose)',
             background: 'var(--rose-bg)', border: '1px solid rgba(248,113,113,0.2)',
             borderRadius: 10, padding: '10px 14px', margin: 0,
-          }}>{error ?? adjacencyError}</p>
+          }}>{error}</p>
         )}
 
         <div>

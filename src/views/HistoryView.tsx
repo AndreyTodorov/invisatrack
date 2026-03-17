@@ -232,8 +232,12 @@ export default function HistoryView() {
           set={editingSet}
           stats={getSetStats(editingSet.setNumber)}
           isCurrent={editingSet.setNumber === treatment?.currentSetNumber}
-          prevSet={sets.find(s => s.setNumber === editingSet.setNumber - 1) ?? null}
-          nextSet={sets.find(s => s.setNumber === editingSet.setNumber + 1) ?? null}
+          prevSet={sets
+            .filter(s => s.id !== editingSet.id && s.startDate.slice(0, 10) < editingSet.startDate.slice(0, 10))
+            .sort((a, b) => b.startDate.localeCompare(a.startDate))[0] ?? null}
+          nextSet={sets
+            .filter(s => s.id !== editingSet.id && s.startDate.slice(0, 10) > editingSet.startDate.slice(0, 10))
+            .sort((a, b) => a.startDate.localeCompare(b.startDate))[0] ?? null}
           onClose={() => setEditingSet(null)}
         />
       )}
