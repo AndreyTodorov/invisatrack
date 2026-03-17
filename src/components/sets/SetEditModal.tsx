@@ -89,7 +89,7 @@ export default function SetEditModal({ set, stats, isCurrent, prevSet, nextSet, 
     try {
       const updates: Partial<Pick<AlignerSet, 'startDate' | 'endDate' | 'note'>> = {
         startDate,
-        endDate: computedEndDate,
+        endDate: computedEndDate ?? set.endDate,
         note: note.trim() || null,
       }
       await updateSet(set.id, updates)
@@ -152,7 +152,7 @@ export default function SetEditModal({ set, stats, isCurrent, prevSet, nextSet, 
           gap: 8,
         }}>
           {[
-            { label: 'Avg Wear', value: `${Math.round(stats.avgWearPct)}%`, color: stats.avgWearPct >= 95 ? 'var(--green)' : stats.avgWearPct >= 75 ? 'var(--amber)' : 'var(--rose)' },
+            { label: 'Avg Wear', value: stats.totalRemovals > 0 ? `${Math.round(stats.avgWearPct)}%` : '—', color: stats.totalRemovals > 0 ? (stats.avgWearPct >= 95 ? 'var(--green)' : stats.avgWearPct >= 75 ? 'var(--amber)' : 'var(--rose)') : 'var(--text-muted)' },
             { label: 'Sessions', value: String(stats.totalRemovals), color: 'var(--text)' },
             { label: 'Per Day', value: stats.avgRemovalsPerDay > 0 ? stats.avgRemovalsPerDay.toFixed(1) : '—', color: 'var(--text)' },
           ].map(({ label, value, color }) => (
