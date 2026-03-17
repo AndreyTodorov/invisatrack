@@ -28,13 +28,14 @@ export default function StartNewSetModal({ currentSetNumber, defaultDurationDays
   const [confirming, setConfirming] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [startDate, setStartDate] = useState(todayLocalDate())
 
   const numVal = parseInt(setNumber)
   const durVal = parseInt(duration)
   const numError = setNumber !== '' && (isNaN(numVal) || numVal < 1) ? 'Enter a valid set number' : null
   const durError = duration !== '' && (isNaN(durVal) || durVal < 1 || durVal > 90)
     ? 'Duration must be 1–90 days' : null
-  const canProceed = !numError && !durError && setNumber !== '' && duration !== ''
+  const canProceed = !numError && !durError && setNumber !== '' && duration !== '' && startDate !== ''
 
   const handleConfirm = () => {
     if (!canProceed) return
@@ -45,7 +46,7 @@ export default function StartNewSetModal({ currentSetNumber, defaultDurationDays
   const handleSave = async () => {
     setSaving(true)
     try {
-      await startNewSet(numVal, todayLocalDate(), durVal)
+      await startNewSet(numVal, startDate, durVal)
       onClose()
     } catch (e: unknown) {
       setError((e as Error).message)
@@ -55,7 +56,9 @@ export default function StartNewSetModal({ currentSetNumber, defaultDurationDays
   }
 
   return (
-    <div style={{
+    <div
+      onClick={onClose}
+      style={{
       position: 'fixed', inset: 0,
       background: 'rgba(0,0,0,0.7)',
       backdropFilter: 'blur(8px)',
@@ -64,6 +67,7 @@ export default function StartNewSetModal({ currentSetNumber, defaultDurationDays
       zIndex: 100,
     }}>
       <div
+        onClick={e => e.stopPropagation()}
         className="animate-slide-up"
         style={{
           background: 'var(--surface)',
@@ -91,7 +95,7 @@ export default function StartNewSetModal({ currentSetNumber, defaultDurationDays
         {confirming ? (
           <>
             <p style={{ fontSize: 14, color: 'var(--amber)', background: 'var(--amber-bg)', border: '1px solid rgba(252,211,77,0.2)', borderRadius: 12, padding: '14px', margin: 0, textAlign: 'center', fontWeight: 500 }}>
-              Start Set {numVal} ({durVal} days)? This will close Set {currentSetNumber}.
+              Start Set {numVal} from {startDate} ({durVal} days)?{startDate > todayLocalDate() ? ' Current set stays active until then.' : ` This will close Set ${currentSetNumber}.`}
             </p>
             <div style={{ display: 'flex', gap: 10 }}>
               <button onClick={() => setConfirming(false)} style={{ ...btnBase, background: 'var(--surface-3)', color: 'var(--text-muted)', border: '1px solid var(--border)' }}>
@@ -113,6 +117,15 @@ export default function StartNewSetModal({ currentSetNumber, defaultDurationDays
                 placeholder={`e.g. ${currentSetNumber + 1}`}
               />
               {numError && <p style={{ fontSize: 11, color: 'var(--rose)', margin: '4px 0 0' }}>{numError}</p>}
+            </div>
+
+            <div>
+              <label style={labelStyle}>Start Date</label>
+              <input
+                type="date"
+                value={startDate}
+                onChange={e => setStartDate(e.target.value)}
+              />
             </div>
 
             <div>
