@@ -1,4 +1,5 @@
 import type { SetStats } from '../../hooks/useReports'
+import { formatDuration } from '../../utils/time'
 
 interface Props {
   setNumber: number
@@ -36,6 +37,12 @@ export default function SetReportCard({ setNumber, current, previous, durationDa
       value: noData ? '—' : `${current.avgWearPct.toFixed(1)}%`,
       delta: noData ? null : <Delta current={current.avgWearPct} previous={previous?.totalRemovals ? (previous?.avgWearPct ?? null) : null} suffix="%" />,
       color: noData ? 'var(--text-faint)' : current.avgWearPct >= 90 ? 'var(--green)' : current.avgWearPct >= 75 ? 'var(--amber)' : 'var(--rose)',
+    },
+    {
+      label: 'Avg Off / Day',
+      value: noData ? '—' : formatDuration(Math.round(current.avgOffMinutes)),
+      delta: noData ? null : <Delta current={current.avgOffMinutes} previous={previous?.totalRemovals ? (previous?.avgOffMinutes ?? null) : null} suffix="m" invert />,
+      color: noData ? 'var(--text-faint)' : 'var(--text-muted)',
     },
     {
       label: 'Total Removals',

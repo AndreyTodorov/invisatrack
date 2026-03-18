@@ -23,6 +23,7 @@ function enumerateDates(startDateStr: string, endDateStr: string): string[] {
 
 export interface SetStats {
   avgWearPct: number
+  avgOffMinutes: number
   totalRemovals: number
   complianceDays: number
   avgRemovalsPerDay: number
@@ -56,11 +57,13 @@ export function useReports(goalMinutes: number) {
       const setSegments = getSegmentsForSessions(setSessions)
       const uniqueDates = [...new Set(setSegments.map(s => s.date))]
       const statsArr = uniqueDates.map(d => computeDailyStats(d, setSegments, goalMinutes))
+      const numDays = statsArr.length
       return {
         avgWearPct: computeAverageWear(statsArr),
+        avgOffMinutes: numDays > 0 ? statsArr.reduce((sum, s) => sum + s.totalOffMinutes, 0) / numDays : 0,
         totalRemovals: setSessions.length,
         complianceDays: statsArr.filter(s => s.compliant).length,
-        avgRemovalsPerDay: statsArr.length > 0 ? setSessions.length / statsArr.length : 0,
+        avgRemovalsPerDay: numDays > 0 ? setSessions.length / numDays : 0,
       }
     }
 
@@ -88,7 +91,7 @@ export function useReports(goalMinutes: number) {
   }, [sets, sessions, goalMinutes])
 
   const getSetStats = useCallback((setNumber: number): SetStats =>
-    allSetStatsMap.get(setNumber) ?? { avgWearPct: 0, totalRemovals: 0, complianceDays: 0, avgRemovalsPerDay: 0 },
+    allSetStatsMap.get(setNumber) ?? { avgWearPct: 0, avgOffMinutes: 0, totalRemovals: 0, complianceDays: 0, avgRemovalsPerDay: 0 },
   [allSetStatsMap])
 
   return { getDailyStatsRange, streak, getSetStats, allSegments, sets }

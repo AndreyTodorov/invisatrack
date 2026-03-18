@@ -93,7 +93,7 @@ export default function DailySummary({ totalOffMinutes, removals, goalMinutes, s
               {Math.round(wearPct)}%
             </span>
             <span style={{ fontSize: 9, color: 'var(--text-muted)', marginTop: 3, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
-              wear
+              goal
             </span>
           </div>
         </div>
