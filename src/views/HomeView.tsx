@@ -243,6 +243,7 @@ export default function HomeView() {
         removals={todayStats.removals}
         goalMinutes={goalMinutes}
         streak={streak}
+        sessions={todaySessions}
         activeMinutes={isRunning ? elapsedMinutes : 0}
       />
 

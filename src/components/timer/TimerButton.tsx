@@ -48,7 +48,7 @@ function pulseDuration(pct: number): number {
 export default function TimerButton({ isRunning, onPress, disabled, budgetPercent = 0 }: Props) {
   const glowRef      = useRef<HTMLDivElement>(null)
   const holdRingRef  = useRef<SVGCircleElement>(null)
-  const holdTrackRef = useRef<SVGCircleElement>(null)
+
   const glowRafRef   = useRef(0)
   const holdRafRef   = useRef(0)
   const isHoldingRef = useRef(false)
@@ -66,7 +66,7 @@ export default function TimerButton({ isRunning, onPress, disabled, budgetPercen
       if (glowRef.current) glowRef.current.style.boxShadow = 'none'
       return
     }
-    let phase = 0
+    let phase = Math.random() * 2 * Math.PI
     function tick() {
       const pct = budgetRef.current
       const dur  = pulseDuration(pct)
@@ -98,7 +98,6 @@ export default function TimerButton({ isRunning, onPress, disabled, budgetPercen
       holdRingRef.current.style.opacity = '0'
       holdRingRef.current.setAttribute('stroke-dashoffset', String(RING_C))
     }
-    if (holdTrackRef.current) holdTrackRef.current.style.opacity = '0'
   }, [])
 
   const startHold = useCallback((e: React.PointerEvent<HTMLButtonElement>) => {
@@ -107,7 +106,6 @@ export default function TimerButton({ isRunning, onPress, disabled, budgetPercen
     try { e.currentTarget.setPointerCapture(e.pointerId) } catch { /* ignore */ }
     isHoldingRef.current = true
     holdStartRef.current = performance.now()
-    if (holdTrackRef.current) holdTrackRef.current.style.opacity = '1'
     function tick() {
       if (!isHoldingRef.current) return
       const progress = Math.min((performance.now() - holdStartRef.current) / HOLD_MS, 1)
@@ -206,28 +204,33 @@ export default function TimerButton({ isRunning, onPress, disabled, budgetPercen
           </>
         ) : (
           <>
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="9"/>
-              <path d="M12 8v4M12 16h.01"/>
-            </svg>
+            {budgetPercent >= 100 && (
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="9"/>
+                <path d="M12 8v4M12 16h.01"/>
+              </svg>
+            )}
             <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', textAlign: 'center', lineHeight: 1.3 }}>
-              Remove<br/>Aligners
+              {budgetPercent >= 100 ? <>Limit<br/>Reached</> : <>Remove<br/>Aligners</>}
             </span>
           </>
         )}
       </button>
 
+      {/* Budget ring dot — rendered after button so it appears on top */}
+      {!isRunning && budgetPercent > 2 && budgetPercent < 98 && (() => {
+        const tipAngle = -Math.PI / 2 + (1 - budgetPercent / 100) * 2 * Math.PI
+        const tipX = 100 + RING_R * Math.cos(tipAngle)
+        const tipY = 100 + RING_R * Math.sin(tipAngle)
+        return (
+          <svg width="200" height="200" style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
+            <circle cx={tipX} cy={tipY} r={5} fill={color} style={{ transition: 'fill 0.5s ease' }} />
+          </svg>
+        )
+      })()}
+
       {/* Hold indicator — rendered after button so it appears on top */}
       <svg width="200" height="200" style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
-        <circle
-          ref={holdTrackRef}
-          cx="100" cy="100" r={RING_R}
-          fill="none"
-          stroke="rgba(255,255,255,0.15)"
-          strokeWidth="4"
-          opacity="0"
-          style={{ transition: 'opacity 0.1s' }}
-        />
         <circle
           ref={holdRingRef}
           cx="100" cy="100" r={RING_R}
