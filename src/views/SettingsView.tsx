@@ -32,11 +32,6 @@ const sectionTitleStyle: React.CSSProperties = {
   letterSpacing: '0.06em', textTransform: 'uppercase',
 }
 
-const secondaryBtn: React.CSSProperties = {
-  width: '100%', background: 'var(--surface-3)', color: 'var(--text)',
-  border: '1px solid var(--border-strong)', borderRadius: 12, padding: '13px 0',
-  fontSize: 14, fontWeight: 600, fontFamily: 'inherit', cursor: 'pointer',
-}
 
 function SaveButton({
   state,
