@@ -25,13 +25,15 @@ function BestWorstCallout({ stats }: { stats: DailyStats[] }) {
   return (
     <div style={{ display: 'flex', gap: 8 }}>
       <div style={{
-        flex: 1, background: 'var(--surface)', border: '1px solid var(--border)',
+        flex: 1,
+        background: 'rgba(74,222,128,0.07)',
+        border: '1px solid rgba(74,222,128,0.2)',
         borderRadius: 14, padding: '12px 14px',
       }}>
-        <div style={{ fontSize: 10, color: 'var(--text-muted)', fontWeight: 500, letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: 4 }}>
+        <div style={{ fontSize: 8, color: 'rgba(74,222,128,0.6)', fontWeight: 500, letterSpacing: '0.04em', textTransform: 'uppercase', marginBottom: 4 }}>
           Best Day
         </div>
-        <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--green)', fontFamily: "'JetBrains Mono', monospace" }}>
+        <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--green)', fontFamily: "'JetBrains Mono', monospace" }}>
           {formatDuration(1440 - best.totalOffMinutes)}
         </div>
         <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
@@ -39,13 +41,15 @@ function BestWorstCallout({ stats }: { stats: DailyStats[] }) {
         </div>
       </div>
       <div style={{
-        flex: 1, background: 'var(--surface)', border: '1px solid var(--border)',
+        flex: 1,
+        background: 'rgba(248,113,113,0.07)',
+        border: '1px solid rgba(248,113,113,0.2)',
         borderRadius: 14, padding: '12px 14px',
       }}>
-        <div style={{ fontSize: 10, color: 'var(--text-muted)', fontWeight: 500, letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: 4 }}>
+        <div style={{ fontSize: 8, color: 'rgba(248,113,113,0.6)', fontWeight: 500, letterSpacing: '0.04em', textTransform: 'uppercase', marginBottom: 4 }}>
           Worst Day
         </div>
-        <div style={{ fontSize: 16, fontWeight: 700, color: worst.compliant ? 'var(--text)' : 'var(--rose)', fontFamily: "'JetBrains Mono', monospace" }}>
+        <div style={{ fontSize: 18, fontWeight: 700, color: worst.compliant ? 'var(--text)' : 'var(--rose)', fontFamily: "'JetBrains Mono', monospace" }}>
           {formatDuration(1440 - worst.totalOffMinutes)}
         </div>
         <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
