@@ -1,0 +1,15 @@
+echo "Checking for console.log statements..."
+if git diff --cached --name-only | grep -E '\.(ts|tsx|js|jsx)$' | xargs grep -l 'console\.log' 2>/dev/null | grep -q .; then
+  echo "ERROR: console.log found in staged files:"
+  git diff --cached --name-only | grep -E '\.(ts|tsx|js|jsx)$' | xargs grep -rn 'console\.log' 2>/dev/null
+  exit 1
+fi
+
+echo "Running lint-staged (ESLint on staged files)..."
+npx lint-staged
+
+echo "Running TypeScript check..."
+npx tsc --noEmit
+
+echo "Running tests..."
+npm test
