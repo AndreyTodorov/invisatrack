@@ -1,3 +1,8 @@
+# Skip this check in CI (e.g. semantic-release pushing back to main)
+if [ "$CI" = "true" ]; then
+  exit 0
+fi
+
 protected_branch="main"
 current_branch=$(git symbolic-ref HEAD | sed -e 's,.*/\(.*\),\1,')
 
