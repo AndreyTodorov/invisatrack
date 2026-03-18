@@ -61,18 +61,23 @@ npm test
 npm run build
 ```
 
-### Firebase Emulator (optional for local dev)
+### Firebase Emulators + Dev Server (local dev)
+
+The emulators run via Docker Compose (no local Firebase CLI install required).
 
 ```bash
-# Install Firebase CLI
-npm install -g firebase-tools
+# Start emulators + Vite dev server together (emulators run in background)
+npm run dev:local
 
-# Start emulators (Auth on :9099, RTDB on :9000)
-firebase emulators:start
+# Or start them separately:
+npm run emulators   # emulators in foreground (Auth :9099, RTDB :9000, UI :4000)
+npm run dev         # Vite dev server
 
-# Point the app at the emulators
-VITE_USE_EMULATOR=true
+# Stop emulators
+npm run emulators:stop
 ```
+
+Point the app at the emulators by setting `VITE_USE_EMULATOR=true` in your `.env` file.
 
 ---
 

@@ -5,6 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:local": "docker compose up -d && npm run dev",
+    "emulators": "docker compose up",
+    "emulators:stop": "docker compose down",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
