@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useSessions } from './useSessions'
-import { scheduleReminderNotification, cancelScheduledNotification } from '../services/notifications'
 import { diffMinutes, nowISO } from '../utils/time'
 
 interface TimerState {
@@ -87,7 +86,6 @@ export function useTimer(
 
   const start = useCallback(async () => {
     await startSession(currentSetNumber)
-    scheduleReminderNotification(reminderThresholdMinutes)
     setTimerState(s => ({
       ...s,
       elapsedMinutes: 0,
@@ -99,7 +97,6 @@ export function useTimer(
 
   const stop = useCallback(async () => {
     if (!activeSession) return
-    cancelScheduledNotification()
     await stopSession(activeSession.id)
     setTimerState(s => ({ ...s, isRunning: false, reminderFired: false }))
   }, [activeSession, stopSession])

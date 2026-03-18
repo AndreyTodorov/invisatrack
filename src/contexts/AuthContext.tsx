@@ -35,7 +35,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await localDB.sets.clear()
         await localDB.profile.clear()
         await localDB.treatment.clear()
-        await localDB.syncQueue.clear()
       },
     }}>
       {children}

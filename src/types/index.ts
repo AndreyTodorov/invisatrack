@@ -51,12 +51,3 @@ export interface DailyStats {
   compliant: boolean
 }
 
-export interface SyncQueueItem {
-  id?: number
-  operation: 'set' | 'update' | 'delete'
-  path: string
-  data: unknown
-  timestamp: string
-  deviceId: string
-  retryCount?: number
-}

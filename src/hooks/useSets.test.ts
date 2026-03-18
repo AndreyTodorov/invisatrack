@@ -26,24 +26,12 @@ vi.mock('../services/db', () => ({
   },
 }))
 
-vi.mock('../services/syncManager', () => ({
-  queueWrite: vi.fn(),
-}))
-
 vi.mock('../contexts/AuthContext', () => ({
   useAuthContext: vi.fn(() => ({ user: { uid: 'user1' } })),
 }))
 
 vi.mock('../contexts/DataContext', () => ({
   useDataContext: vi.fn(() => ({ sets: [], treatment: null })),
-}))
-
-vi.mock('./useOnlineStatus', () => ({
-  useOnlineStatus: vi.fn(() => true),
-}))
-
-vi.mock('../utils/deviceId', () => ({
-  getDeviceId: vi.fn(() => 'test-device'),
 }))
 
 vi.mock('../utils/time', () => ({
@@ -58,9 +46,7 @@ vi.mock('../utils/time', () => ({
 
 import { set as fbSet, update as fbUpdate, remove as fbRemove } from '../services/firebase'
 import { localDB } from '../services/db'
-import { queueWrite } from '../services/syncManager'
 import { useDataContext } from '../contexts/DataContext'
-import { useOnlineStatus } from './useOnlineStatus'
 
 const makeSet = (id: string, setNumber: number): AlignerSet => ({
   id,
@@ -86,13 +72,11 @@ beforeEach(() => {
   vi.mocked(localDB.sets.update).mockResolvedValue(undefined as never)
   vi.mocked(localDB.sets.delete).mockResolvedValue(undefined as never)
   vi.mocked(localDB.treatment.update).mockResolvedValue(undefined as never)
-  vi.mocked(queueWrite).mockResolvedValue(undefined as never)
   vi.mocked(useDataContext).mockReturnValue({ sets: [], treatment: null } as never)
-  vi.mocked(useOnlineStatus).mockReturnValue(true)
 })
 
 describe('startNewSet', () => {
-  it('creates new set with pre-computed endDate when online', async () => {
+  it('creates new set with pre-computed endDate', async () => {
     const { result } = renderHook(() => useSets())
     await act(async () => { await result.current.startNewSet(1, '2026-03-17', 7) })
 
@@ -104,7 +88,6 @@ describe('startNewSet', () => {
       expect.objectContaining({ currentSetNumber: 1, currentSetStartDate: '2026-03-17' })
     )
     expect(fbSet).toHaveBeenCalled()
-    expect(queueWrite).not.toHaveBeenCalled()
   })
 
   it('throws when set number already exists', async () => {
@@ -122,23 +105,20 @@ describe('startNewSet', () => {
 
   it('closes legacy set (endDate=null) when starting new one', async () => {
     vi.mocked(useDataContext).mockReturnValue({
-      sets: [makeSet('s1', 3)],  // makeSet has endDate: null (legacy)
+      sets: [makeSet('s1', 3)],
       treatment: makeTreatment(3),
     } as never)
 
     const { result } = renderHook(() => useSets())
     await act(async () => { await result.current.startNewSet(4, '2026-03-17', 7) })
 
-    // Closes legacy set with the new set's startDate
     expect(localDB.sets.update).toHaveBeenCalledWith(
       's1',
       expect.objectContaining({ endDate: '2026-03-17' })
     )
-    // Creates new set
     expect(localDB.sets.put).toHaveBeenCalledWith(
       expect.objectContaining({ setNumber: 4, startDate: '2026-03-17', endDate: '2026-03-24' })
     )
-    // Updates treatment
     expect(localDB.treatment.update).toHaveBeenCalledWith(
       'user1',
       expect.objectContaining({ currentSetNumber: 4 })
@@ -155,18 +135,7 @@ describe('startNewSet', () => {
     const { result } = renderHook(() => useSets())
     await act(async () => { await result.current.startNewSet(4, '2026-03-17', 7) })
 
-    // Should NOT update the existing set since it already has endDate
     expect(localDB.sets.update).not.toHaveBeenCalledWith('s1', expect.anything())
-  })
-
-  it('queues writes when offline', async () => {
-    vi.mocked(useOnlineStatus).mockReturnValue(false)
-
-    const { result } = renderHook(() => useSets())
-    await act(async () => { await result.current.startNewSet(1, '2026-03-17', 7) })
-
-    expect(fbSet).not.toHaveBeenCalled()
-    expect(queueWrite).toHaveBeenCalled()
   })
 
   it('does not close previous set when none exists', async () => {
@@ -184,7 +153,7 @@ describe('startNewSet', () => {
 })
 
 describe('updateSet', () => {
-  it('updates setNumber in localDB and Firebase when online', async () => {
+  it('updates setNumber in localDB and Firebase', async () => {
     const { result } = renderHook(() => useSets())
     await act(async () => {
       await result.current.updateSet('s1', { setNumber: 7 })
@@ -192,12 +161,11 @@ describe('updateSet', () => {
 
     expect(localDB.sets.update).toHaveBeenCalledWith('s1', { setNumber: 7 })
     expect(fbUpdate).toHaveBeenCalled()
-    expect(queueWrite).not.toHaveBeenCalled()
   })
 })
 
 describe('updateTreatment', () => {
-  it('updates treatment in localDB and Firebase when online', async () => {
+  it('updates treatment in localDB and Firebase', async () => {
     const { result } = renderHook(() => useSets())
     await act(async () => {
       await result.current.updateTreatment({ totalSets: 25, defaultSetDurationDays: 14 })
@@ -208,26 +176,11 @@ describe('updateTreatment', () => {
       expect.objectContaining({ totalSets: 25, defaultSetDurationDays: 14 })
     )
     expect(fbUpdate).toHaveBeenCalled()
-    expect(queueWrite).not.toHaveBeenCalled()
-  })
-
-  it('queues update when offline', async () => {
-    vi.mocked(useOnlineStatus).mockReturnValue(false)
-
-    const { result } = renderHook(() => useSets())
-    await act(async () => {
-      await result.current.updateTreatment({ totalSets: 20 })
-    })
-
-    expect(fbUpdate).not.toHaveBeenCalled()
-    expect(queueWrite).toHaveBeenCalledWith(
-      expect.objectContaining({ operation: 'update', path: 'users/user1/treatment' })
-    )
   })
 })
 
 describe('deleteSet', () => {
-  it('deletes from localDB and Firebase when online', async () => {
+  it('deletes from localDB and Firebase', async () => {
     vi.mocked(useDataContext).mockReturnValue({
       sets: [makeSet('s1', 3)],
       treatment: makeTreatment(3),
@@ -238,22 +191,5 @@ describe('deleteSet', () => {
 
     expect(localDB.sets.delete).toHaveBeenCalledWith('s1')
     expect(fbRemove).toHaveBeenCalled()
-    expect(queueWrite).not.toHaveBeenCalled()
-  })
-
-  it('queues delete when offline', async () => {
-    vi.mocked(useOnlineStatus).mockReturnValue(false)
-    vi.mocked(useDataContext).mockReturnValue({
-      sets: [makeSet('s1', 3)],
-      treatment: makeTreatment(3),
-    } as never)
-
-    const { result } = renderHook(() => useSets())
-    await act(async () => { await result.current.deleteSet('s1') })
-
-    expect(fbRemove).not.toHaveBeenCalled()
-    expect(queueWrite).toHaveBeenCalledWith(
-      expect.objectContaining({ operation: 'delete', path: 'users/user1/sets/s1' })
-    )
   })
 })

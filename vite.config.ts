@@ -24,13 +24,6 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ["**/*.{js,css,html,ico,png,svg}"],
-        runtimeCaching: [
-          {
-            urlPattern: /^https:\/\/.*\.firebaseio\.com\/.*/i,
-            handler: "StaleWhileRevalidate",
-            options: { cacheName: "firebase-cache" },
-          },
-        ],
       },
     }),
   ],
