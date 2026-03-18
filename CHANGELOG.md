@@ -1,3 +1,13 @@
+# [1.2.0](https://github.com/AndreyTodorov/invisatrack/compare/v1.1.0...v1.2.0) (2026-03-18)
+
+
+### Features
+
+*  sync fixes for Firebase and IndexedDB, enhance offline behavior and conflict resolution ([e2849b0](https://github.com/AndreyTodorov/invisatrack/commit/e2849b0d5bf232ab581809ac99a3671fb8a800ab))
+* add sync indicator pill to HomeView header ([d4bc9d3](https://github.com/AndreyTodorov/invisatrack/commit/d4bc9d34e17016542f444250b79827ed2b9011b2))
+* enhance DataContext and HomeView for Firebase treatment loading state ([17f2cd6](https://github.com/AndreyTodorov/invisatrack/commit/17f2cd66a305cd4cde7350a50a3c6307fed246a5))
+* enhance TimerButton with adaptive glow and hold functionality ([179de91](https://github.com/AndreyTodorov/invisatrack/commit/179de9154d85ae2f8e11bb1690dc3f3c1f349dac))
+
 # [1.1.0](https://github.com/AndreyTodorov/invisatrack/compare/v1.0.0...v1.1.0) (2026-03-18)
 
 
