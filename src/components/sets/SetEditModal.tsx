@@ -291,7 +291,17 @@ export default function SetEditModal({ set, stats, isCurrent, prevSet, nextSet, 
         {view === 'edit' && (
           <>
             <div style={{ display: 'flex', gap: 10 }}>
-              <button onClick={onClose} style={{ ...btnBase, flex: 1, background: 'var(--surface-3)', color: 'var(--text-muted)', border: '1px solid var(--border)' }}>
+              <button
+                onClick={onClose}
+                disabled={!hasChanges}
+                style={{
+                  ...btnBase, flex: 1,
+                  background: hasChanges ? 'var(--surface-3)' : 'transparent',
+                  color: hasChanges ? 'var(--text-muted)' : 'var(--text-faint)',
+                  border: hasChanges ? '1px solid var(--border)' : '1px solid transparent',
+                  cursor: hasChanges ? 'pointer' : 'default',
+                }}
+              >
                 Cancel
               </button>
               <button
