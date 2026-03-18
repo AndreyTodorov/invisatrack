@@ -18,32 +18,60 @@ function Delta({ current, previous, suffix = '', invert = false }: {
   if (previous === null) return null
   const diff = current - previous
   if (diff === 0) return null
-  // invert: fewer is better (removals), so negative diff = green
   const isPositive = diff > 0
   const isGood = invert ? !isPositive : isPositive
   const color = isGood ? 'var(--green)' : 'var(--rose)'
   return (
-    <span style={{ fontSize: 11, color, marginLeft: 6, fontWeight: 500 }}>
+    <span style={{ fontSize: 10, color, marginLeft: 5, fontWeight: 500 }}>
       {isPositive ? '+' : ''}{Number.isInteger(diff) ? diff : diff.toFixed(1)}{suffix}
     </span>
   )
 }
 
 export default function SetReportCard({ setNumber, current, previous, durationDays, goalMinutes }: Props) {
-  const goalPct = (goalMinutes / 1440) * 100
   const noData = current.totalRemovals === 0 && current.complianceDays === 0
+  const avgWornMinutes = 1440 - current.avgOffMinutes
+  const wornFillPct = noData ? 0 : Math.min((avgWornMinutes / 1440) * 100, 100)
+  const goalNotchPct = Math.min((goalMinutes / 1440) * 100, 100)
+  const goalHours = Math.round(goalMinutes / 60)
+
+  const wornColor = noData
+    ? 'var(--text-faint)'
+    : avgWornMinutes >= goalMinutes
+      ? 'var(--green)'
+      : avgWornMinutes >= goalMinutes * 0.9
+        ? 'var(--amber)'
+        : 'var(--rose)'
+
+  const complianceValue = noData
+    ? '—'
+    : durationDays !== null
+      ? `${current.complianceDays} / ${durationDays}`
+      : String(current.complianceDays)
 
   const rows = [
     {
       label: 'Avg Worn / Day',
-      value: noData ? '—' : formatDuration(Math.round(1440 - current.avgOffMinutes)),
-      delta: noData ? null : <Delta current={1440 - current.avgOffMinutes} previous={previous?.totalRemovals ? (previous?.avgOffMinutes != null ? 1440 - previous.avgOffMinutes : null) : null} suffix="m" />,
-      color: noData ? 'var(--text-faint)' : current.avgWearPct >= goalPct ? 'var(--green)' : current.avgWearPct >= 75 ? 'var(--amber)' : 'var(--rose)',
+      value: noData ? '—' : formatDuration(Math.round(avgWornMinutes)),
+      delta: noData ? null : (
+        <Delta
+          current={avgWornMinutes}
+          previous={previous?.totalRemovals ? (previous.avgOffMinutes != null ? 1440 - previous.avgOffMinutes : null) : null}
+          suffix="m"
+        />
+      ),
+      color: wornColor,
+    },
+    {
+      label: 'Compliance Days',
+      value: complianceValue,
+      delta: noData ? null : <Delta current={current.complianceDays} previous={previous?.complianceDays ?? null} />,
+      color: noData ? 'var(--text-faint)' : 'var(--text)',
     },
     {
       label: 'Avg Off / Day',
       value: noData ? '—' : formatDuration(Math.round(current.avgOffMinutes)),
-      delta: noData ? null : <Delta current={current.avgOffMinutes} previous={previous?.totalRemovals ? (previous?.avgOffMinutes ?? null) : null} suffix="m" invert />,
+      delta: noData ? null : <Delta current={current.avgOffMinutes} previous={previous?.totalRemovals ? (previous.avgOffMinutes ?? null) : null} suffix="m" invert />,
       color: noData ? 'var(--text-faint)' : 'var(--text-muted)',
     },
     {
@@ -53,13 +81,7 @@ export default function SetReportCard({ setNumber, current, previous, durationDa
       color: noData ? 'var(--text-faint)' : 'var(--text)',
     },
     {
-      label: 'Compliance Days',
-      value: noData ? '—' : String(current.complianceDays),
-      delta: noData ? null : <Delta current={current.complianceDays} previous={previous?.complianceDays ?? null} />,
-      color: noData ? 'var(--text-faint)' : 'var(--text)',
-    },
-    {
-      label: 'Avg Removals/Day',
+      label: 'Avg Removals / Day',
       value: noData ? '—' : current.avgRemovalsPerDay.toFixed(1),
       delta: noData ? null : <Delta current={current.avgRemovalsPerDay} previous={previous?.avgRemovalsPerDay ?? null} invert />,
       color: noData ? 'var(--text-faint)' : 'var(--text-muted)',
@@ -72,7 +94,8 @@ export default function SetReportCard({ setNumber, current, previous, durationDa
       border: '1px solid var(--border)',
       borderRadius: 18, padding: '16px 18px',
     }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+      {/* Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
         <div style={{
           fontSize: 12, fontWeight: 600, color: 'var(--cyan)',
           letterSpacing: '0.08em', textTransform: 'uppercase',
@@ -80,16 +103,59 @@ export default function SetReportCard({ setNumber, current, previous, durationDa
           Set {setNumber}
         </div>
         {durationDays !== null && (
-          <div style={{ fontSize: 11, color: 'var(--text-faint)' }}>
+          <div style={{ fontSize: 10, color: 'var(--text-faint)' }}>
             {durationDays} day{durationDays !== 1 ? 's' : ''}
           </div>
         )}
       </div>
+
+      {/* Wear bar: 0–24h range */}
+      <div style={{ marginBottom: 14 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 5 }}>
+          <span style={{
+            fontSize: 8, fontWeight: 500, color: 'var(--text-muted)',
+            textTransform: 'uppercase', letterSpacing: '0.04em',
+          }}>
+            Avg worn
+          </span>
+          <span style={{
+            fontSize: 16, fontWeight: 700, color: wornColor,
+            fontFamily: "'JetBrains Mono', monospace", lineHeight: 1,
+          }}>
+            {noData ? '—' : formatDuration(Math.round(avgWornMinutes))}
+          </span>
+        </div>
+        <div style={{ height: 6, background: 'rgba(255,255,255,0.07)', borderRadius: 4, overflow: 'visible', position: 'relative' }}>
+          <div style={{
+            width: `${wornFillPct}%`, height: '100%', borderRadius: 4,
+            background: 'linear-gradient(90deg, #22D3EE 0%, #4ADE80 100%)',
+          }} />
+          <div style={{
+            position: 'absolute', top: -3, left: `${goalNotchPct}%`,
+            width: 2, height: 12, background: 'rgba(248,113,113,0.7)', borderRadius: 1,
+          }} />
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
+          <span style={{ fontSize: 8, color: 'var(--text-faint)' }}>0h</span>
+          <span style={{ fontSize: 8, color: 'rgba(248,113,113,0.6)' }}>goal {goalHours}h</span>
+          <span style={{ fontSize: 8, color: 'var(--text-faint)' }}>24h</span>
+        </div>
+      </div>
+
+      {/* Rows: tiny label left, large value right */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         {rows.map(row => (
-          <div key={row.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>{row.label}</span>
-            <span style={{ fontSize: 14, fontWeight: 600, color: row.color }}>
+          <div key={row.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+            <span style={{
+              fontSize: 9, color: 'var(--text-muted)',
+              textTransform: 'uppercase', letterSpacing: '0.04em', fontWeight: 500,
+            }}>
+              {row.label}
+            </span>
+            <span style={{
+              fontSize: 17, fontWeight: 700, color: row.color,
+              fontFamily: "'JetBrains Mono', monospace", lineHeight: 1,
+            }}>
               {row.value}{row.delta}
             </span>
           </div>
