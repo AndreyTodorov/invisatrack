@@ -74,8 +74,32 @@ export default function TreatmentProgress({ treatment, defaultSetDurationDays, a
       )}
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <span style={{ fontSize: 12, color: 'var(--text-faint)' }}>
-          Day {daysSinceStart + 1} of {defaultSetDurationDays}
+        <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
+          {Array.from({ length: defaultSetDurationDays }, (_, i) => {
+            const isPast  = i < daysSinceStart
+            const isToday = i === daysSinceStart
+            return (
+              <div
+                key={i}
+                style={{
+                  width: 10, height: 10, borderRadius: 3, flexShrink: 0,
+                  background: isPast
+                    ? 'var(--cyan)'
+                    : isToday
+                    ? 'var(--green)'
+                    : 'var(--surface-3)',
+                  boxShadow: isPast
+                    ? '0 0 4px rgba(34,211,238,0.4)'
+                    : isToday
+                    ? '0 0 4px rgba(74,222,128,0.4)'
+                    : 'none',
+                }}
+              />
+            )
+          })}
+        </div>
+        <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>
+          {Math.max(0, defaultSetDurationDays - daysSinceStart - 1)} days left
         </span>
       </div>
 

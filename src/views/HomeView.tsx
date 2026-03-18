@@ -5,7 +5,6 @@ import { useSessions } from '../hooks/useSessions'
 import { useReports } from '../hooks/useReports'
 import { useAutoAdvanceSet } from '../hooks/useAutoAdvanceSet'
 import { useDataContext } from '../contexts/DataContext'
-import ActiveTimer from '../components/timer/ActiveTimer'
 import TimerButton from '../components/timer/TimerButton'
 import TimerAlert from '../components/timer/TimerAlert'
 import DailySummary from '../components/dashboard/DailySummary'
@@ -179,11 +178,7 @@ export default function HomeView() {
         </div>
       )}
 
-      {isRunning && (
-        <ActiveTimer elapsedMinutes={elapsedMinutes} reminderFired={reminderFired} />
-      )}
-
-      {autoCapped && (
+{autoCapped && (
         <div style={{
           background: 'var(--amber-bg)',
           border: '1px solid rgba(252,211,77,0.2)',
@@ -199,6 +194,8 @@ export default function HomeView() {
           isRunning={isRunning}
           onPress={isRunning ? handleStop : handleStart}
           budgetPercent={budgetPercent}
+          elapsedMinutes={elapsedMinutes}
+          reminderFired={reminderFired}
         />
       </div>
 
@@ -262,7 +259,12 @@ export default function HomeView() {
             + Add
           </button>
         </div>
-        <SessionList sessions={todaySessions} onEdit={setEditingSession} />
+        <SessionList
+          sessions={todaySessions}
+          onEdit={setEditingSession}
+          activeSession={isRunning ? (sessions.find(s => s.endTime == null) ?? null) : null}
+          activeElapsedMinutes={elapsedMinutes}
+        />
       </div>
 
       <TreatmentProgress

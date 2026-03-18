@@ -1,9 +1,11 @@
 import type { Session } from '../../types'
-import { formatDurationShort, diffMinutes } from '../../utils/time'
+import { formatDurationShort, formatDuration, diffMinutes } from '../../utils/time'
 
 interface Props {
   sessions: Session[]
   onEdit: (session: Session) => void
+  activeSession?: Session | null
+  activeElapsedMinutes?: number
 }
 
 // FIX LG-4: reliable local time formatting using explicit UTC field reads after offset shift
@@ -14,12 +16,19 @@ function formatLocalTime(isoString: string, offsetMinutes: number): string {
   return `${h}:${m}`
 }
 
-export default function SessionList({ sessions, onEdit }: Props) {
+const EditIcon = () => (
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--text-faint)', opacity: 0.5, flexShrink: 0 }}>
+    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+  </svg>
+)
+
+export default function SessionList({ sessions, onEdit, activeSession, activeElapsedMinutes = 0 }: Props) {
   const completed = sessions
     .filter(s => s.endTime != null)
     .sort((a, b) => b.startTime.localeCompare(a.startTime))
 
-  if (completed.length === 0) return (
+  if (!activeSession && completed.length === 0) return (
     <p style={{ color: 'var(--text-faint)', textAlign: 'center', padding: '16px 0', fontSize: 14 }}>
       No sessions yet today
     </p>
@@ -27,6 +36,32 @@ export default function SessionList({ sessions, onEdit }: Props) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+      {/* Live session row */}
+      {activeSession && (
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          background: 'rgba(34,211,238,0.05)',
+          border: '1px solid rgba(34,211,238,0.2)',
+          borderRadius: 14, padding: '12px 16px',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{
+              width: 7, height: 7, borderRadius: '50%',
+              background: 'var(--cyan)', boxShadow: '0 0 5px var(--cyan)',
+              animation: 'session-pulse 1.4s ease-in-out infinite', flexShrink: 0,
+            }} className="session-live-dot" />
+            <span style={{ fontSize: 14, color: 'var(--cyan)', fontWeight: 400 }}>
+              {formatLocalTime(activeSession.startTime, activeSession.startTimezoneOffset)}
+              <span style={{ margin: '0 6px', opacity: 0.4 }}>→</span>
+              now
+            </span>
+          </div>
+          <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--cyan)', fontFamily: "'JetBrains Mono', monospace" }}>
+            {formatDuration(activeElapsedMinutes)}
+          </span>
+        </div>
+      )}
+
       {completed.map(s => {
         const duration = diffMinutes(s.startTime, s.endTime!)
         return (
@@ -70,12 +105,10 @@ export default function SessionList({ sessions, onEdit }: Props) {
                   auto
                 </span>
               )}
-              <span style={{
-                fontSize: 14, fontWeight: 600,
-                color: 'var(--text)',
-              }}>
+              <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>
                 {formatDurationShort(duration)}
               </span>
+              <EditIcon />
             </div>
           </button>
         )

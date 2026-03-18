@@ -1,14 +1,17 @@
 import { useRef, useEffect, useCallback } from 'react'
+import { formatDuration } from '../../utils/time'
 
 interface Props {
   isRunning: boolean
   onPress: () => void
   disabled?: boolean
   budgetPercent?: number // 0–100, how much of daily off-budget has been consumed
+  elapsedMinutes?: number
+  reminderFired?: boolean
 }
 
 const HOLD_MS = 1000
-const RING_R = 90
+const RING_R = 102
 const RING_C = 2 * Math.PI * RING_R
 
 // Smooth color gradient: cyan → amber → orange → red
@@ -45,7 +48,7 @@ function pulseDuration(pct: number): number {
   return 3.0 - t * t * 2.3
 }
 
-export default function TimerButton({ isRunning, onPress, disabled, budgetPercent = 0 }: Props) {
+export default function TimerButton({ isRunning, onPress, disabled, budgetPercent = 0, elapsedMinutes = 0, reminderFired = false }: Props) {
   const glowRef      = useRef<HTMLDivElement>(null)
   const holdRingRef  = useRef<SVGCircleElement>(null)
 
@@ -136,8 +139,10 @@ export default function TimerButton({ isRunning, onPress, disabled, budgetPercen
   const color      = `rgb(${r},${g},${b})`
 
 
+  const elapsedColor = reminderFired ? 'var(--rose)' : 'var(--cyan)'
+
   return (
-    <div style={{ position: 'relative', width: 200, height: 200 }}>
+    <div style={{ position: 'relative', width: 224, height: 224 }}>
       {/* Adaptive glow layer */}
       <div
         ref={glowRef}
@@ -146,17 +151,17 @@ export default function TimerButton({ isRunning, onPress, disabled, budgetPercen
 
       {/* Budget ring — only visible when timer is not running */}
       {!isRunning && (
-        <svg width="200" height="200" style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
-          <circle cx="100" cy="100" r={RING_R} fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="2" />
+        <svg width="224" height="224" style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
+          <circle cx="112" cy="112" r={RING_R} fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="2" />
           <circle
-            cx="100" cy="100" r={RING_R}
+            cx="112" cy="112" r={RING_R}
             fill="none"
             stroke={color}
             strokeWidth="2"
             strokeLinecap="round"
             strokeDasharray={String(RING_C)}
             strokeDashoffset={String(RING_C * (budgetPercent / 100))}
-            transform="rotate(-90 100 100)"
+            transform="rotate(-90 112 112)"
             style={{
               transition: 'stroke-dashoffset 0.8s ease, stroke 0.5s ease',
               filter: `drop-shadow(0 0 4px ${color})`,
@@ -194,25 +199,49 @@ export default function TimerButton({ isRunning, onPress, disabled, budgetPercen
       >
         {isRunning ? (
           <>
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+            <span style={{
+              fontFamily: "'JetBrains Mono', monospace",
+              fontSize: 36,
+              fontWeight: 700,
+              color: elapsedColor,
+              letterSpacing: '-0.02em',
+              lineHeight: 1,
+              filter: `drop-shadow(0 0 10px ${elapsedColor})`,
+            }}>
+              {formatDuration(elapsedMinutes)}
+            </span>
+            <div style={{ width: 40, height: 1, background: `rgba(${r},${g},${b},0.25)`, margin: '8px 0 4px' }} />
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style={{ opacity: 0.6 }}>
               <rect x="5" y="5" width="5" height="14" rx="1"/>
               <rect x="14" y="5" width="5" height="14" rx="1"/>
             </svg>
-            <span style={{ fontSize: 12, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-              Put Back
+            <span style={{ fontSize: 9, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', opacity: 0.5, marginTop: 1 }}>
+              Hold to stop
             </span>
           </>
         ) : (
           <>
-            {budgetPercent >= 100 && (
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="9"/>
-                <path d="M12 8v4M12 16h.01"/>
-              </svg>
+            {budgetPercent >= 100 ? (
+              <>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="9"/>
+                  <path d="M12 8v4M12 16h.01"/>
+                </svg>
+                <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', textAlign: 'center', lineHeight: 1.3 }}>
+                  Limit<br/>Reached
+                </span>
+              </>
+            ) : (
+              <>
+                <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', textAlign: 'center', lineHeight: 1.3 }}>
+                  Remove<br/>Aligners
+                </span>
+                <div style={{ width: 36, height: 1, background: 'rgba(255,255,255,0.1)', margin: '5px 0 3px' }} />
+                <span style={{ fontSize: 9, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', opacity: 0.4 }}>
+                  Hold to start
+                </span>
+              </>
             )}
-            <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', textAlign: 'center', lineHeight: 1.3 }}>
-              {budgetPercent >= 100 ? <>Limit<br/>Reached</> : <>Remove<br/>Aligners</>}
-            </span>
           </>
         )}
       </button>
@@ -220,27 +249,27 @@ export default function TimerButton({ isRunning, onPress, disabled, budgetPercen
       {/* Budget ring dot — rendered after button so it appears on top */}
       {!isRunning && budgetPercent > 2 && budgetPercent < 98 && (() => {
         const tipAngle = -Math.PI / 2 + (1 - budgetPercent / 100) * 2 * Math.PI
-        const tipX = 100 + RING_R * Math.cos(tipAngle)
-        const tipY = 100 + RING_R * Math.sin(tipAngle)
+        const tipX = 112 + RING_R * Math.cos(tipAngle)
+        const tipY = 112 + RING_R * Math.sin(tipAngle)
         return (
-          <svg width="200" height="200" style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
+          <svg width="224" height="224" style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
             <circle cx={tipX} cy={tipY} r={5} fill={color} style={{ transition: 'fill 0.5s ease' }} />
           </svg>
         )
       })()}
 
       {/* Hold indicator — rendered after button so it appears on top */}
-      <svg width="200" height="200" style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
+      <svg width="224" height="224" style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
         <circle
           ref={holdRingRef}
-          cx="100" cy="100" r={RING_R}
+          cx="112" cy="112" r={RING_R}
           fill="none"
           stroke="rgba(255,255,255,0.9)"
           strokeWidth="4"
           strokeLinecap="round"
           strokeDasharray={String(RING_C)}
           strokeDashoffset={String(RING_C)}
-          transform="rotate(-90 100 100)"
+          transform="rotate(-90 112 112)"
           opacity="0"
           style={{ filter: 'drop-shadow(0 0 5px rgba(255,255,255,0.7))' }}
         />
