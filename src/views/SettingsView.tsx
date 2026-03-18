@@ -108,7 +108,12 @@ export default function SettingsPageView() {
   const [defaultDuration, setDefaultDuration] = useState(7)
 
   // Track initial values to detect unsaved changes
-  const profileInitRef = useRef({ goalHours: 0, goalMins: 0, reminderMins: 0, autoCapMins: 0 })
+  const profileInitRef = useRef({
+    goalHours: Math.floor(DEFAULT_DAILY_WEAR_GOAL_MINUTES / 60),
+    goalMins: DEFAULT_DAILY_WEAR_GOAL_MINUTES % 60,
+    reminderMins: DEFAULT_REMINDER_THRESHOLD_MINUTES,
+    autoCapMins: DEFAULT_AUTO_CAP_MINUTES,
+  })
   const treatmentInitRef = useRef({ totalSets: '', defaultDuration: 7 })
 
   const [profileSaveState, setProfileSaveState] = useState<SaveState>('idle')
