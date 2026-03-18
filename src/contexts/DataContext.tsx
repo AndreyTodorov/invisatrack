@@ -1,5 +1,5 @@
 import {
-  createContext, useContext, useEffect, useState, type ReactNode, type Dispatch, type SetStateAction,
+  createContext, useContext, useEffect, useRef, useState, type ReactNode, type Dispatch, type SetStateAction,
 } from 'react'
 import { onValue, sessionsRef, setsRef, profileRef, treatmentRef } from '../services/firebase'
 import { localDB } from '../services/db'
@@ -11,6 +11,7 @@ interface DataContextValue {
   profile: UserProfile | null
   treatment: Treatment | null
   loaded: boolean
+  firebaseTreatmentLoaded: boolean
   setSessions: Dispatch<SetStateAction<Session[]>>
 }
 
@@ -22,6 +23,19 @@ export function DataProvider({ uid, children }: { uid: string; children: ReactNo
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [treatment, setTreatment] = useState<Treatment | null>(null)
   const [loaded, setLoaded] = useState(false)
+  const [firebaseTreatmentLoaded, setFirebaseTreatmentLoaded] = useState(false)
+  const firebaseTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // If Firebase treatment hasn't responded within 5s of IndexedDB loading,
+  // fall back to IndexedDB data so the app isn't stuck waiting indefinitely
+  useEffect(() => {
+    if (loaded && !firebaseTreatmentLoaded) {
+      firebaseTimeoutRef.current = setTimeout(() => setFirebaseTreatmentLoaded(true), 5000)
+    }
+    return () => {
+      if (firebaseTimeoutRef.current) clearTimeout(firebaseTimeoutRef.current)
+    }
+  }, [loaded, firebaseTreatmentLoaded])
 
   // Load from IndexedDB first (instant, offline-capable)
   useEffect(() => {
@@ -96,8 +110,9 @@ export function DataProvider({ uid, children }: { uid: string; children: ReactNo
 
     const unsubTreatment = onValue(treatmentRef(uid), snap => {
       const t = snap.val() as Treatment | null
+      setTreatment(t)
+      setFirebaseTreatmentLoaded(true)
       if (t) {
-        setTreatment(t)
         localDB.treatment.put({ ...t, uid }).catch(err =>
           console.error('Failed to persist treatment to IndexedDB:', err)
         )
@@ -108,12 +123,13 @@ export function DataProvider({ uid, children }: { uid: string; children: ReactNo
   }, [uid])
 
   return (
-    <DataContext.Provider value={{ sessions, sets, profile, treatment, loaded, setSessions }}>
+    <DataContext.Provider value={{ sessions, sets, profile, treatment, loaded, firebaseTreatmentLoaded, setSessions }}>
       {children}
     </DataContext.Provider>
   )
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useDataContext(): DataContextValue {
   const ctx = useContext(DataContext)
   if (!ctx) throw new Error('useDataContext must be inside DataProvider')

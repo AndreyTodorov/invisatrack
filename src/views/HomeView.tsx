@@ -26,7 +26,7 @@ import {
 const SNOOZE_MINUTES = 10
 
 export default function HomeView() {
-  const { profile, treatment, sets, loaded } = useDataContext()
+  const { profile, treatment, sets, loaded, firebaseTreatmentLoaded } = useDataContext()
   const navigate = useNavigate()
 
   const goalMinutes = profile?.dailyWearGoalMinutes ?? DEFAULT_DAILY_WEAR_GOAL_MINUTES
@@ -64,21 +64,14 @@ export default function HomeView() {
   const [showAdd, setShowAdd] = useState(false)
   const snoozeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [lastSession, setLastSession] = useState<{ durationMinutes: number; budgetLeftMinutes: number } | null>(null)
-  const [showAlert, setShowAlert] = useState(false)
-  const [alertShownForSessionRef] = useState<{ id: string | null }>({ id: null })
+  // snoozedUntil: null = not snoozed, Infinity = dismissed for session, timestamp = snoozed until that time
+  const [snoozedUntil, setSnoozedUntil] = useState<number | null>(null)
+  const showAlert = reminderFired && !snoozedUntil
 
   // Redirect to onboarding if no treatment set up
   useEffect(() => {
-    if (loaded && !treatment) navigate('/onboarding', { replace: true })
-  }, [loaded, treatment, navigate])
-
-  // Show alert dialog when reminder fires (once per session)
-  useEffect(() => {
-    if (reminderFired && alertShownForSessionRef.id !== (treatment ? String(currentSet) : null)) {
-      setShowAlert(true)
-      alertShownForSessionRef.id = String(currentSet)
-    }
-  }, [reminderFired])
+    if (loaded && firebaseTreatmentLoaded && !treatment) navigate('/onboarding', { replace: true })
+  }, [loaded, firebaseTreatmentLoaded, treatment, navigate])
 
   // Clear snooze timer when session stops
   useEffect(() => {
@@ -88,14 +81,23 @@ export default function HomeView() {
     }
   }, [isRunning])
 
-  const handleSnooze = () => {
-    setShowAlert(false)
-    snoozeTimerRef.current = setTimeout(() => setShowAlert(true), SNOOZE_MINUTES * 60 * 1000)
+  const handleStart = async () => {
+    setSnoozedUntil(null)
+    await start()
   }
 
-  useEffect(() => {
-    if (isRunning) setLastSession(null)
-  }, [isRunning])
+  const handleDismiss = () => {
+    if (snoozeTimerRef.current) {
+      clearTimeout(snoozeTimerRef.current)
+      snoozeTimerRef.current = null
+    }
+    setSnoozedUntil(Infinity)
+  }
+
+  const handleSnooze = () => {
+    setSnoozedUntil(Date.now() + SNOOZE_MINUTES * 60 * 1000)
+    snoozeTimerRef.current = setTimeout(() => setSnoozedUntil(null), SNOOZE_MINUTES * 60 * 1000)
+  }
 
   const handleStop = async () => {
     const duration = elapsedMinutes
@@ -108,9 +110,13 @@ export default function HomeView() {
   const usedOffMinutes = todayStats.totalOffMinutes + (isRunning ? elapsedMinutes : 0)
   const budgetPercent = Math.min(100, (usedOffMinutes / maxOffMinutes) * 100)
 
-  // Suppress stats rendering until data is loaded
   if (!loaded) return (
-    <div style={{ padding: 32, textAlign: 'center', color: 'var(--text-faint)' }}>Loading…</div>
+    <div style={{ padding: 32, textAlign: 'center', color: 'var(--text-faint)' }}>Loading your data…</div>
+  )
+
+  // IndexedDB was empty — waiting for Firebase to confirm whether treatment exists
+  if (!treatment && !firebaseTreatmentLoaded) return (
+    <div style={{ padding: 32, textAlign: 'center', color: 'var(--text-faint)' }}>Syncing with server…</div>
   )
 
   return (
@@ -168,12 +174,12 @@ export default function HomeView() {
       <div style={{ display: 'flex', justifyContent: 'center', padding: '8px 0' }}>
         <TimerButton
           isRunning={isRunning}
-          onPress={isRunning ? handleStop : start}
+          onPress={isRunning ? handleStop : handleStart}
           budgetPercent={budgetPercent}
         />
       </div>
 
-      {lastSession && (
+      {lastSession && !isRunning && (
         <div
           className="animate-fade-in"
           style={{
@@ -247,7 +253,7 @@ export default function HomeView() {
       {showAlert && (
         <TimerAlert
           thresholdMinutes={reminderMins}
-          onDismiss={() => setShowAlert(false)}
+          onDismiss={handleDismiss}
           onSnooze={handleSnooze}
         />
       )}
