@@ -157,16 +157,20 @@ export default function SetEditModal({ set, stats, isCurrent, prevSet, nextSet, 
   }
 
   return (
-    <div style={{
-      position: 'fixed', inset: 0,
-      background: 'rgba(0,0,0,0.7)',
-      backdropFilter: 'blur(8px)',
-      WebkitBackdropFilter: 'blur(8px)',
-      display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
-      zIndex: 100,
-    }}>
+    <div
+      onClick={onClose}
+      style={{
+        position: 'fixed', inset: 0,
+        background: 'rgba(0,0,0,0.7)',
+        backdropFilter: 'blur(8px)',
+        WebkitBackdropFilter: 'blur(8px)',
+        display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
+        zIndex: 100,
+      }}
+    >
       <div
         className="animate-slide-up"
+        onClick={e => e.stopPropagation()}
         style={{
           background: 'var(--surface)',
           borderTop: '1px solid var(--border-strong)',
@@ -382,6 +386,16 @@ export default function SetEditModal({ set, stats, isCurrent, prevSet, nextSet, 
                   </button>
                 ))}
             </div>
+            <button
+              onClick={onClose}
+              style={{
+                width: '100%', border: 'none', background: 'transparent',
+                padding: '6px 0', fontSize: 13, fontWeight: 500,
+                fontFamily: 'inherit', cursor: 'pointer', color: 'var(--text-faint)',
+              }}
+            >
+              Close
+            </button>
           </div>
         )}
       </div>

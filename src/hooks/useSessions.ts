@@ -76,9 +76,13 @@ export function useSessions() {
     sessionId: string,
     updates: Partial<Pick<Session, 'startTime' | 'endTime'>>
   ) => {
-    if (updates.startTime && updates.endTime) {
-      const otherSessions = sessions.filter(s => s.id !== sessionId)
-      validateSession(updates.startTime, updates.endTime, otherSessions, sessionId)
+    if (updates.startTime) {
+      const existing = sessions.find(s => s.id === sessionId)
+      const effectiveEndTime = updates.endTime ?? existing?.endTime ?? null
+      if (effectiveEndTime) {
+        const otherSessions = sessions.filter(s => s.id !== sessionId)
+        validateSession(updates.startTime, effectiveEndTime, otherSessions, sessionId)
+      }
     }
     const payload = { ...updates, updatedAt: nowISO() }
     await localDB.sessions.update(sessionId, payload)
@@ -86,10 +90,16 @@ export function useSessions() {
   }, [uid, sessions, writeToFirebase])
 
   const deleteSession = useCallback(async (sessionId: string) => {
+    const session = sessions.find(s => s.id === sessionId)
     setSessions(prev => prev.filter(s => s.id !== sessionId))
-    await localDB.sessions.delete(sessionId)
-    await remove(ref(db, `users/${uid}/sessions/${sessionId}`))
-  }, [uid, setSessions])
+    try {
+      await localDB.sessions.delete(sessionId)
+      await remove(ref(db, `users/${uid}/sessions/${sessionId}`))
+    } catch (e) {
+      if (session) setSessions(prev => [...prev, session])
+      throw e
+    }
+  }, [uid, sessions, setSessions])
 
   const addManualSession = useCallback(async (
     startTime: string,

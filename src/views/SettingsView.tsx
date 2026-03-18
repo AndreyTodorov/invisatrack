@@ -347,11 +347,11 @@ export default function SettingsPageView() {
         const defaultDur = treatment.defaultSetDurationDays
         const currentDur = currentSet?.endDate ? dateDiffDays(currentSet.startDate, currentSet.endDate) : defaultDur
         const overrideDirty = setDurationOverride !== setDurationOverrideInitRef.current
-        const overrideError = setDurationOverride !== '' && (
-          parseInt(setDurationOverride) < 1 ? 'Minimum 1 day' :
-          parseInt(setDurationOverride) > 90 ? 'Maximum 90 days' :
-          undefined
-        )
+        const overrideError: string | null = setDurationOverride !== ''
+          ? parseInt(setDurationOverride) < 1 ? 'Minimum 1 day'
+          : parseInt(setDurationOverride) > 90 ? 'Maximum 90 days'
+          : null
+          : null
         return (
           <div style={sectionStyle}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
@@ -371,7 +371,7 @@ export default function SettingsPageView() {
                   ? `Ends ${currentSet.endDate} · ${currentDur} days`
                   : `No end date set — enter days to set a duration.`}
               </p>
-              {overrideError && <FieldError message={overrideError as string} />}
+              {overrideError && <FieldError message={overrideError} />}
             </div>
             <SaveButton
               state={overrideError ? 'idle' : setDurationSaveState}

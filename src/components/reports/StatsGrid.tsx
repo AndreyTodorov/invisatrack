@@ -1,6 +1,6 @@
 import type { DailyStats } from '../../types'
 import { computeAverageWear } from '../../utils/stats'
-import { formatDuration } from '../../utils/time'
+import { formatDuration, formatDurationShort } from '../../utils/time'
 
 interface Props { stats: DailyStats[] }
 
@@ -11,6 +11,7 @@ export default function StatsGrid({ stats }: Props) {
   const longestRemoval = stats.length > 0
     ? Math.max(...stats.map(d => d.longestRemovalMinutes))
     : 0
+  const totalOffMinutes = stats.reduce((s, d) => s + d.totalOffMinutes, 0)
   const complianceDays = stats.filter(d => d.compliant).length
 
   const items = [
@@ -18,6 +19,7 @@ export default function StatsGrid({ stats }: Props) {
     { label: 'Total Removals', value: String(totalRemovals), color: 'var(--text)' },
     { label: 'Avg / Day', value: String(Math.round(avgRemovals)), color: 'var(--text)' },
     { label: 'Longest Off', value: formatDuration(longestRemoval), color: 'var(--text-muted)' },
+    { label: 'Total Off', value: formatDurationShort(totalOffMinutes), color: 'var(--text-muted)' },
     { label: 'Compliant', value: `${complianceDays}/${stats.length}`, color: complianceDays === stats.length && stats.length > 0 ? 'var(--green)' : 'var(--text)' },
   ]
 
