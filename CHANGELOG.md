@@ -1,3 +1,10 @@
+# [1.1.0](https://github.com/AndreyTodorov/invisatrack/compare/v1.0.0...v1.1.0) (2026-03-18)
+
+
+### Features
+
+* add average off minutes to reports and update related components ([6e676a3](https://github.com/AndreyTodorov/invisatrack/commit/6e676a3b8d889c3cfb42700687b9fff0a2e0793b))
+
 # 1.0.0 (2026-03-18)
 
 
