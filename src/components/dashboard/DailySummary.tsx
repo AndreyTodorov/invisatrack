@@ -60,7 +60,7 @@ export default function DailySummary({ totalOffMinutes, removals, goalMinutes, s
       {/* Wear ring */}
       <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
         <div style={{ position: 'relative', width: 88, height: 88 }}>
-          <svg width="88" height="88" style={{ position: 'absolute', inset: 0 }}>
+          <svg width="88" height="88" style={{ position: 'absolute', inset: 0, filter: `drop-shadow(0 0 5px ${ringColor})` }}>
             {/* Track */}
             <circle
               cx="44" cy="44" r={RING_R}
@@ -80,7 +80,6 @@ export default function DailySummary({ totalOffMinutes, removals, goalMinutes, s
               transform="rotate(-90 44 44)"
               style={{
                 transition: 'stroke-dashoffset 0.8s ease, stroke 0.5s ease',
-                filter: `drop-shadow(0 0 5px ${ringColor})`,
               }}
             />
           </svg>
