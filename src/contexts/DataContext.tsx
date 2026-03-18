@@ -1,7 +1,7 @@
 import {
   createContext, useContext, useEffect, useRef, useState, type ReactNode, type Dispatch, type SetStateAction,
 } from 'react'
-import { onValue, sessionsRef, setsRef, profileRef, treatmentRef } from '../services/firebase'
+import { onValue, sessionsRef, setsRef, profileRef, treatmentRef, ref, db } from '../services/firebase'
 import { localDB } from '../services/db'
 import type { Session, AlignerSet, UserProfile, Treatment } from '../types'
 
@@ -12,6 +12,7 @@ interface DataContextValue {
   treatment: Treatment | null
   loaded: boolean
   firebaseTreatmentLoaded: boolean
+  connected: boolean | null
   setSessions: Dispatch<SetStateAction<Session[]>>
 }
 
@@ -24,7 +25,16 @@ export function DataProvider({ uid, children }: { uid: string; children: ReactNo
   const [treatment, setTreatment] = useState<Treatment | null>(null)
   const [loaded, setLoaded] = useState(false)
   const [firebaseTreatmentLoaded, setFirebaseTreatmentLoaded] = useState(false)
+  const [connected, setConnected] = useState<boolean | null>(null)
   const firebaseTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Track Firebase connection state globally (not uid-scoped)
+  useEffect(() => {
+    const unsub = onValue(ref(db, '.info/connected'), snap => {
+      setConnected(snap.val() as boolean)
+    })
+    return unsub
+  }, [])
 
   // If Firebase treatment hasn't responded within 5s of IndexedDB loading,
   // fall back to IndexedDB data so the app isn't stuck waiting indefinitely
@@ -123,7 +133,7 @@ export function DataProvider({ uid, children }: { uid: string; children: ReactNo
   }, [uid])
 
   return (
-    <DataContext.Provider value={{ sessions, sets, profile, treatment, loaded, firebaseTreatmentLoaded, setSessions }}>
+    <DataContext.Provider value={{ sessions, sets, profile, treatment, loaded, firebaseTreatmentLoaded, connected, setSessions }}>
       {children}
     </DataContext.Provider>
   )

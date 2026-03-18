@@ -74,7 +74,7 @@ beforeEach(() => {
 describe('HomeView — loading states', () => {
   it('shows "Loading your data…" while IndexedDB has not yet resolved', () => {
     vi.mocked(useDataContext).mockReturnValue({
-      loaded: false, firebaseTreatmentLoaded: false,
+      loaded: false, firebaseTreatmentLoaded: false, connected: null,
       treatment: null, profile: null, sets: [], sessions: [], setSessions: vi.fn(),
     })
 
@@ -85,7 +85,7 @@ describe('HomeView — loading states', () => {
 
   it('shows "Syncing with server…" when IndexedDB is empty and Firebase has not responded', () => {
     vi.mocked(useDataContext).mockReturnValue({
-      loaded: true, firebaseTreatmentLoaded: false,
+      loaded: true, firebaseTreatmentLoaded: false, connected: null,
       treatment: null, profile: null, sets: [], sessions: [], setSessions: vi.fn(),
     })
 
@@ -98,7 +98,7 @@ describe('HomeView — loading states', () => {
 describe('HomeView — onboarding redirect', () => {
   it('does not redirect while waiting for Firebase to confirm treatment', () => {
     vi.mocked(useDataContext).mockReturnValue({
-      loaded: true, firebaseTreatmentLoaded: false,
+      loaded: true, firebaseTreatmentLoaded: false, connected: null,
       treatment: null, profile: null, sets: [], sessions: [], setSessions: vi.fn(),
     })
 
@@ -109,7 +109,7 @@ describe('HomeView — onboarding redirect', () => {
 
   it('redirects to /onboarding once Firebase confirms there is no treatment', () => {
     vi.mocked(useDataContext).mockReturnValue({
-      loaded: true, firebaseTreatmentLoaded: true,
+      loaded: true, firebaseTreatmentLoaded: true, connected: true,
       treatment: null, profile: null, sets: [], sessions: [], setSessions: vi.fn(),
     })
 
@@ -120,7 +120,7 @@ describe('HomeView — onboarding redirect', () => {
 
   it('does not redirect when treatment exists', () => {
     vi.mocked(useDataContext).mockReturnValue({
-      loaded: true, firebaseTreatmentLoaded: true,
+      loaded: true, firebaseTreatmentLoaded: true, connected: true,
       treatment: { currentSetNumber: 1, totalSets: 10, defaultSetDurationDays: 7, currentSetStartDate: '2026-01-01' },
       profile: null, sets: [], sessions: [], setSessions: vi.fn(),
     })
@@ -128,5 +128,55 @@ describe('HomeView — onboarding redirect', () => {
     renderHome()
 
     expect(mockNavigate).not.toHaveBeenCalled()
+  })
+})
+
+describe('HomeView — sync indicator', () => {
+  const treatment = { currentSetNumber: 1, totalSets: 10, defaultSetDurationDays: 7, currentSetStartDate: '2026-01-01' }
+
+  it('shows "Syncing…" pill when loaded but Firebase not yet responded and local treatment exists', () => {
+    vi.mocked(useDataContext).mockReturnValue({
+      loaded: true, firebaseTreatmentLoaded: false, connected: null,
+      treatment, profile: null, sets: [], sessions: [], setSessions: vi.fn(),
+    })
+
+    renderHome()
+
+    expect(screen.getByText('Syncing…')).toBeInTheDocument()
+  })
+
+  it('shows "Offline" pill when Firebase reports disconnected', () => {
+    vi.mocked(useDataContext).mockReturnValue({
+      loaded: true, firebaseTreatmentLoaded: true, connected: false,
+      treatment, profile: null, sets: [], sessions: [], setSessions: vi.fn(),
+    })
+
+    renderHome()
+
+    expect(screen.getByText('Offline')).toBeInTheDocument()
+  })
+
+  it('shows no pill when loaded, synced, and connected', () => {
+    vi.mocked(useDataContext).mockReturnValue({
+      loaded: true, firebaseTreatmentLoaded: true, connected: true,
+      treatment, profile: null, sets: [], sessions: [], setSessions: vi.fn(),
+    })
+
+    renderHome()
+
+    expect(screen.queryByText('Syncing…')).not.toBeInTheDocument()
+    expect(screen.queryByText('Offline')).not.toBeInTheDocument()
+  })
+
+  it('shows "Syncing…" (not "Offline") when both syncing and disconnected simultaneously', () => {
+    vi.mocked(useDataContext).mockReturnValue({
+      loaded: true, firebaseTreatmentLoaded: false, connected: false,
+      treatment, profile: null, sets: [], sessions: [], setSessions: vi.fn(),
+    })
+
+    renderHome()
+
+    expect(screen.getByText('Syncing…')).toBeInTheDocument()
+    expect(screen.queryByText('Offline')).not.toBeInTheDocument()
   })
 })

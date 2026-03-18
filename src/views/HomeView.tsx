@@ -26,7 +26,8 @@ import {
 const SNOOZE_MINUTES = 10
 
 export default function HomeView() {
-  const { profile, treatment, sets, loaded, firebaseTreatmentLoaded } = useDataContext()
+  const { profile, treatment, sets, loaded, firebaseTreatmentLoaded, connected } = useDataContext()
+  const syncing = loaded && !firebaseTreatmentLoaded && treatment !== null
   const navigate = useNavigate()
 
   const goalMinutes = profile?.dailyWearGoalMinutes ?? DEFAULT_DAILY_WEAR_GOAL_MINUTES
@@ -125,16 +126,38 @@ export default function HomeView() {
         <h1 style={{ fontSize: 20, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.01em' }}>
           InvisaTrack
         </h1>
-        {treatment && (
-          <span style={{
-            fontSize: 12, fontWeight: 500, color: 'var(--text-muted)',
-            background: 'var(--surface)', border: '1px solid var(--border)',
-            borderRadius: 20, padding: '4px 12px',
-          }}>
-            Set {treatment.currentSetNumber}
-            {treatment.totalSets ? `/${treatment.totalSets}` : ''}
-          </span>
-        )}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          {syncing && (
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 5,
+              background: 'rgba(251,191,36,0.08)', border: '1px solid rgba(251,191,36,0.25)',
+              borderRadius: 20, padding: '4px 10px',
+            }}>
+              <div className="sync-dot-pulse" style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--amber)' }} />
+              <span style={{ fontSize: 11, fontWeight: 500, color: 'var(--amber)' }}>Syncing…</span>
+            </div>
+          )}
+          {!syncing && connected === false && (
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 5,
+              background: 'rgba(100,116,139,0.08)', border: '1px solid rgba(100,116,139,0.2)',
+              borderRadius: 20, padding: '4px 10px',
+            }}>
+              <div style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--text-faint)' }} />
+              <span style={{ fontSize: 11, fontWeight: 500, color: 'var(--text-faint)' }}>Offline</span>
+            </div>
+          )}
+          {treatment && (
+            <span style={{
+              fontSize: 12, fontWeight: 500, color: 'var(--text-muted)',
+              background: 'var(--surface)', border: '1px solid var(--border)',
+              borderRadius: 20, padding: '4px 12px',
+            }}>
+              Set {treatment.currentSetNumber}
+              {treatment.totalSets ? `/${treatment.totalSets}` : ''}
+            </span>
+          )}
+        </div>
       </div>
 
       {autoAdvancedSets.length > 0 && (

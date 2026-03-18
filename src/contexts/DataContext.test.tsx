@@ -10,6 +10,8 @@ vi.mock('../services/firebase', () => ({
   setsRef: vi.fn(() => 'sets-ref'),
   profileRef: vi.fn(() => 'profile-ref'),
   treatmentRef: vi.fn(() => 'treatment-ref'),
+  ref: vi.fn((_db: unknown, path: string) => path),
+  db: {},
 }))
 
 vi.mock('../services/db', () => ({
@@ -112,6 +114,7 @@ describe('DataContext — firebaseTreatmentLoaded', () => {
   })
 
   it('does not trigger the timeout when Firebase responds before 5s', async () => {
+
     vi.useFakeTimers()
     const callbacks = captureCallbacks()
 
@@ -130,5 +133,45 @@ describe('DataContext — firebaseTreatmentLoaded', () => {
     act(() => { vi.advanceTimersByTime(4001) })
 
     expect(result.current.firebaseTreatmentLoaded).toBe(true)
+  })
+})
+
+describe('DataContext — connected', () => {
+  it('starts as null before .info/connected fires', async () => {
+    vi.mocked(onValue).mockReturnValue(vi.fn() as unknown as Unsubscribe)
+
+    const { result } = renderHook(() => useDataContext(), { wrapper })
+    await act(async () => {})
+
+    expect(result.current.connected).toBeNull()
+  })
+
+  it('becomes true when Firebase reports connected', async () => {
+    const callbacks = captureCallbacks()
+
+    const { result } = renderHook(() => useDataContext(), { wrapper })
+    await act(async () => {})
+
+    act(() => {
+      callbacks.get('.info/connected')!({ val: () => true } as unknown as DataSnapshot)
+    })
+
+    expect(result.current.connected).toBe(true)
+  })
+
+  it('becomes false when Firebase reports disconnected after being connected', async () => {
+    const callbacks = captureCallbacks()
+
+    const { result } = renderHook(() => useDataContext(), { wrapper })
+    await act(async () => {})
+
+    act(() => {
+      callbacks.get('.info/connected')!({ val: () => true } as unknown as DataSnapshot)
+    })
+    act(() => {
+      callbacks.get('.info/connected')!({ val: () => false } as unknown as DataSnapshot)
+    })
+
+    expect(result.current.connected).toBe(false)
   })
 })
