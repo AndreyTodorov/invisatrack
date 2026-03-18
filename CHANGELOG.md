@@ -1,3 +1,10 @@
+# [1.3.0](https://github.com/AndreyTodorov/invisatrack/compare/v1.2.0...v1.3.0) (2026-03-18)
+
+
+### Features
+
+* add drop shadow effect to wear ring in DailySummary component ([84c6557](https://github.com/AndreyTodorov/invisatrack/commit/84c655743b2078431e2ee528dfe8eea933471811))
+
 # [1.2.0](https://github.com/AndreyTodorov/invisatrack/compare/v1.1.0...v1.2.0) (2026-03-18)
 
 
