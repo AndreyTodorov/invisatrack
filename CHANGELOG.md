@@ -1,3 +1,11 @@
+# [1.7.0](https://github.com/AndreyTodorov/invisatrack/compare/v1.6.0...v1.7.0) (2026-03-18)
+
+
+### Features
+
+* **dashboard:** add hour grid lines and now indicator to DailySummary ([564c361](https://github.com/AndreyTodorov/invisatrack/commit/564c36150441ecf100a66a3db6bee55df3d49457))
+* **home:** improve today card, timer button, and treatment progress UI ([1364081](https://github.com/AndreyTodorov/invisatrack/commit/1364081ae3d8cb6ec328cffc2e57be8bbddac6d4))
+
 # [1.6.0](https://github.com/AndreyTodorov/invisatrack/compare/v1.5.0...v1.6.0) (2026-03-18)
 
 
