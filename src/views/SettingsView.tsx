@@ -2,9 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useAuthContext } from '../contexts/AuthContext'
 import { useDataContext } from '../contexts/DataContext'
 import { useSets } from '../hooks/useSets'
-import { useSync } from '../hooks/useSync'
 import ExportButton from '../components/settings/ExportButton'
-import { requestNotificationPermission } from '../services/notifications'
 import { update, ref, db } from '../services/firebase'
 import { localDB } from '../services/db'
 import { addDays, dateDiffDays } from '../utils/time'
@@ -105,7 +103,6 @@ export default function SettingsPageView() {
   const { user, signOut } = useAuthContext()
   const { profile, treatment, sets } = useDataContext()
   const { updateTreatment, updateSet } = useSets()
-  const { status, queueCount } = useSync()
 
   // Goal split into hours + minutes
   const [goalHours, setGoalHours] = useState(Math.floor(DEFAULT_DAILY_WEAR_GOAL_MINUTES / 60))
@@ -132,10 +129,6 @@ export default function SettingsPageView() {
   const [setDurationOverride, setSetDurationOverride] = useState<string>('')
   const setDurationOverrideInitRef = useRef<string>('')
   const [setDurationSaveState, setSetDurationSaveState] = useState<SaveState>('idle')
-
-  const [notifGranted, setNotifGranted] = useState(
-    typeof Notification !== 'undefined' && Notification.permission === 'granted'
-  )
 
   useEffect(() => {
     if (profile) {
@@ -259,18 +252,10 @@ export default function SettingsPageView() {
     }
   }
 
-  const handleRequestNotifications = async () => {
-    const granted = await requestNotificationPermission()
-    setNotifGranted(granted)
-  }
-
   return (
     <div style={{ padding: '0 16px 32px', maxWidth: 440, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 16 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 20 }}>
         <h1 style={{ fontSize: 20, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.01em' }}>Settings</h1>
-        <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>
-          {status}{queueCount > 0 ? ` · ${queueCount} pending` : ''}
-        </span>
       </div>
 
       {/* Wear goal */}
@@ -362,11 +347,11 @@ export default function SettingsPageView() {
         const defaultDur = treatment.defaultSetDurationDays
         const currentDur = currentSet?.endDate ? dateDiffDays(currentSet.startDate, currentSet.endDate) : defaultDur
         const overrideDirty = setDurationOverride !== setDurationOverrideInitRef.current
-        const overrideError = setDurationOverride !== '' && (
-          parseInt(setDurationOverride) < 1 ? 'Minimum 1 day' :
-          parseInt(setDurationOverride) > 90 ? 'Maximum 90 days' :
-          undefined
-        )
+        const overrideError: string | null = setDurationOverride !== ''
+          ? parseInt(setDurationOverride) < 1 ? 'Minimum 1 day'
+          : parseInt(setDurationOverride) > 90 ? 'Maximum 90 days'
+          : null
+          : null
         return (
           <div style={sectionStyle}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
@@ -386,7 +371,7 @@ export default function SettingsPageView() {
                   ? `Ends ${currentSet.endDate} · ${currentDur} days`
                   : `No end date set — enter days to set a duration.`}
               </p>
-              {overrideError && <FieldError message={overrideError as string} />}
+              {overrideError && <FieldError message={overrideError} />}
             </div>
             <SaveButton
               state={overrideError ? 'idle' : setDurationSaveState}
@@ -397,30 +382,6 @@ export default function SettingsPageView() {
           </div>
         )
       })()}
-
-      {/* Notifications */}
-      <div style={sectionStyle}>
-        <span style={sectionTitleStyle}>Notifications</span>
-        {notifGranted ? (
-          <p style={{ fontSize: 13, color: 'var(--green)' }}>Push notifications enabled ✓</p>
-        ) : (
-          <>
-            {(() => {
-              const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent) ||
-                (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
-              return isIOS ? (
-                <p style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.5 }}>
-                  Push notifications are not supported on iPhone or iPad. In-app reminders will still fire while the app is open.
-                </p>
-              ) : (
-                <button onClick={handleRequestNotifications} style={secondaryBtn}>
-                  Enable Push Notifications
-                </button>
-              )
-            })()}
-          </>
-        )}
-      </div>
 
       <ExportButton />
 

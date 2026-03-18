@@ -62,7 +62,7 @@ export function DataProvider({ uid, children }: { uid: string; children: ReactNo
       firebaseSessions.forEach(async s => {
         try {
           const existing = await localDB.sessions.get(s.id)
-          if (!existing || existing.updatedAt <= s.updatedAt) {
+          if (!existing || existing.updatedAt < s.updatedAt) {
             await localDB.sessions.put({ ...s, uid })
           }
         } catch (err) {

@@ -1,10 +1,8 @@
 import { useCallback, useRef } from 'react'
 import { push, set, update, remove, ref, db, sessionsRef } from '../services/firebase'
 import { localDB } from '../services/db'
-import { queueWrite } from '../services/syncManager'
 import { useDataContext } from '../contexts/DataContext'
 import { useAuthContext } from '../contexts/AuthContext'
-import { useOnlineStatus } from './useOnlineStatus'
 import { getDeviceId } from '../utils/deviceId'
 import { nowISO, getTimezoneOffset } from '../utils/time'
 import { validateSession } from '../utils/sessionValidation'
@@ -13,7 +11,6 @@ import type { Session } from '../types'
 export function useSessions() {
   const { user } = useAuthContext()
   const { sessions, setSessions } = useDataContext()
-  const online = useOnlineStatus()
   const uid = user!.uid
   const deviceId = getDeviceId()
   // FIX SF-3: prevent concurrent writes from double-taps
@@ -50,19 +47,17 @@ export function useSessions() {
         endTimezoneOffset: null,
         setNumber,
         autoCapped: false,
-        createdOffline: !online,
+        createdOffline: false,
         deviceId,
         updatedAt: now,
       }
       await localDB.sessions.put({ ...session, uid })
-      const path = `users/${uid}/sessions/${id}`
-      if (online) await writeToFirebase(path, session, 'set')
-      else await queueWrite({ operation: 'set', path, data: session, timestamp: now, deviceId })
+      await writeToFirebase(`users/${uid}/sessions/${id}`, session, 'set')
       return id
     } finally {
       isSubmittingRef.current = false
     }
-  }, [uid, online, deviceId, sessions, writeToFirebase])
+  }, [uid, deviceId, sessions, writeToFirebase])
 
   const stopSession = useCallback(async (sessionId: string) => {
     if (isSubmittingRef.current) return
@@ -71,36 +66,40 @@ export function useSessions() {
       const endTime = nowISO()
       const updates = { endTime, endTimezoneOffset: getTimezoneOffset(), updatedAt: endTime }
       await localDB.sessions.update(sessionId, updates)
-      const path = `users/${uid}/sessions/${sessionId}`
-      if (online) await writeToFirebase(path, updates, 'update')
-      else await queueWrite({ operation: 'update', path, data: updates, timestamp: endTime, deviceId })
+      await writeToFirebase(`users/${uid}/sessions/${sessionId}`, updates, 'update')
     } finally {
       isSubmittingRef.current = false
     }
-  }, [uid, online, deviceId, writeToFirebase])
+  }, [uid, writeToFirebase])
 
   const updateSession = useCallback(async (
     sessionId: string,
     updates: Partial<Pick<Session, 'startTime' | 'endTime'>>
   ) => {
-    if (updates.startTime && updates.endTime) {
-      const otherSessions = sessions.filter(s => s.id !== sessionId)
-      validateSession(updates.startTime, updates.endTime, otherSessions, sessionId)
+    if (updates.startTime) {
+      const existing = sessions.find(s => s.id === sessionId)
+      const effectiveEndTime = updates.endTime ?? existing?.endTime ?? null
+      if (effectiveEndTime) {
+        const otherSessions = sessions.filter(s => s.id !== sessionId)
+        validateSession(updates.startTime, effectiveEndTime, otherSessions, sessionId)
+      }
     }
     const payload = { ...updates, updatedAt: nowISO() }
     await localDB.sessions.update(sessionId, payload)
-    const path = `users/${uid}/sessions/${sessionId}`
-    if (online) await writeToFirebase(path, payload, 'update')
-    else await queueWrite({ operation: 'update', path, data: payload, timestamp: nowISO(), deviceId })
-  }, [uid, sessions, online, deviceId, writeToFirebase])
+    await writeToFirebase(`users/${uid}/sessions/${sessionId}`, payload, 'update')
+  }, [uid, sessions, writeToFirebase])
 
   const deleteSession = useCallback(async (sessionId: string) => {
+    const session = sessions.find(s => s.id === sessionId)
     setSessions(prev => prev.filter(s => s.id !== sessionId))
-    await localDB.sessions.delete(sessionId)
-    const path = `users/${uid}/sessions/${sessionId}`
-    if (online) await remove(ref(db, path))
-    else await queueWrite({ operation: 'delete', path, data: null, timestamp: nowISO(), deviceId })
-  }, [uid, online, deviceId, setSessions])
+    try {
+      await localDB.sessions.delete(sessionId)
+      await remove(ref(db, `users/${uid}/sessions/${sessionId}`))
+    } catch (e) {
+      if (session) setSessions(prev => [...prev, session])
+      throw e
+    }
+  }, [uid, sessions, setSessions])
 
   const addManualSession = useCallback(async (
     startTime: string,
@@ -118,15 +117,13 @@ export function useSessions() {
       endTimezoneOffset: getTimezoneOffset(),
       setNumber,
       autoCapped: false,
-      createdOffline: !online,
+      createdOffline: false,
       deviceId,
       updatedAt: nowISO(),
     }
     await localDB.sessions.put({ ...session, uid })
-    const path = `users/${uid}/sessions/${id}`
-    if (online) await writeToFirebase(path, session, 'set')
-    else await queueWrite({ operation: 'set', path, data: session, timestamp: nowISO(), deviceId })
-  }, [uid, online, sessions, deviceId, writeToFirebase])
+    await writeToFirebase(`users/${uid}/sessions/${id}`, session, 'set')
+  }, [uid, sessions, deviceId, writeToFirebase])
 
   return { sessions, startSession, stopSession, updateSession, deleteSession, addManualSession }
 }

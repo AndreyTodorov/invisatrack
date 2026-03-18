@@ -10,11 +10,6 @@ vi.mock('./useSessions', () => ({
   })),
 }))
 
-vi.mock('../services/notifications', () => ({
-  scheduleReminderNotification: vi.fn(),
-  cancelScheduledNotification: vi.fn(),
-}))
-
 vi.mock('../utils/time', () => ({
   diffMinutes: vi.fn(() => 5),
   nowISO: vi.fn(() => '2026-03-17T10:05:00.000Z'),

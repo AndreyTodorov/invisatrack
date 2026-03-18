@@ -5,6 +5,7 @@ import WearChart from '../components/reports/WearChart'
 import StatsGrid from '../components/reports/StatsGrid'
 import SetReportCard from '../components/reports/SetReportCard'
 import { DEFAULT_DAILY_WEAR_GOAL_MINUTES } from '../constants'
+import { dateDiffDays } from '../utils/time'
 import type { DailyStats } from '../types'
 
 function formatDayLabel(dateStr: string): string {
@@ -19,7 +20,6 @@ function BestWorstCallout({ stats }: { stats: DailyStats[] }) {
   const best = stats.reduce((a, b) => a.wearPercentage >= b.wearPercentage ? a : b)
   const worst = stats.reduce((a, b) => a.wearPercentage <= b.wearPercentage ? a : b)
 
-  // Only show if there's meaningful variance
   if (best.date === worst.date) return null
 
   return (
@@ -101,7 +101,7 @@ export default function ReportsView() {
   const [period, setPeriod] = useState<Period>('7d')
   const { profile, sets } = useDataContext()
   const goalMinutes = profile?.dailyWearGoalMinutes ?? DEFAULT_DAILY_WEAR_GOAL_MINUTES
-  const { getDailyStatsRange, getSetStats, allSegments } = useReports(goalMinutes)
+  const { getDailyStatsRange, getSetStats, allSegments, streak } = useReports(goalMinutes)
 
   // Earliest date any session was recorded
   const firstSessionDate = allSegments.length > 0
@@ -120,16 +120,30 @@ export default function ReportsView() {
     ? getDailyStatsRange(getDateRange(period)).filter(s => {
         if (s.date > todayStr) return false
         if (period === '7d') return s.removals > 0
-        // week/month: show all days from first session onwards (0-removal = wore all day)
         return firstSessionDate !== null && s.date >= firstSessionDate
       })
     : []
 
   return (
     <div style={{ padding: '0 16px 16px', maxWidth: 440, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <h1 style={{ fontSize: 20, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.01em', paddingTop: 20 }}>
-        Reports
-      </h1>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 20 }}>
+        <h1 style={{ fontSize: 20, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.01em' }}>
+          Reports
+        </h1>
+        {streak > 0 && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+            <span style={{
+              fontSize: 18, fontWeight: 700, color: 'var(--cyan)',
+              fontFamily: "'JetBrains Mono', monospace", lineHeight: 1,
+            }}>
+              {streak}
+            </span>
+            <span style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 500 }}>
+              day streak
+            </span>
+          </div>
+        )}
+      </div>
 
       {/* Tab switcher */}
       <div style={{
@@ -184,12 +198,16 @@ export default function ReportsView() {
               const current = getSetStats(s.setNumber)
               const prevSet = sets.find(x => x.setNumber === s.setNumber - 1)
               const previous = prevSet ? getSetStats(prevSet.setNumber) : null
+              const durationDays = s.startDate && s.endDate
+                ? dateDiffDays(s.startDate, s.endDate)
+                : null
               return (
                 <SetReportCard
                   key={s.id}
                   setNumber={s.setNumber}
                   current={current}
                   previous={previous}
+                  durationDays={durationDays}
                 />
               )
             })}

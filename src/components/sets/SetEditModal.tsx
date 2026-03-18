@@ -67,7 +67,7 @@ export default function SetEditModal({ set, stats, isCurrent, prevSet, nextSet, 
   // If set.endDate is null (legacy open set), any computed end date counts as changed —
   // this is intentional: first-time setting an end date should cascade to the next set.
   const endChanged = computedEndDate !== null && computedEndDate !== set.endDate?.slice(0, 10)
-  const noteChanged = (note.trim() || null) !== set.note
+  const noteChanged = (note.trim() || null) !== (set.note ?? null)
   const setNumberChanged = setNumberVal !== set.setNumber && !setNumberError
   const hasChanges = startChanged || endChanged || noteChanged || setNumberChanged
 
@@ -157,16 +157,20 @@ export default function SetEditModal({ set, stats, isCurrent, prevSet, nextSet, 
   }
 
   return (
-    <div style={{
-      position: 'fixed', inset: 0,
-      background: 'rgba(0,0,0,0.7)',
-      backdropFilter: 'blur(8px)',
-      WebkitBackdropFilter: 'blur(8px)',
-      display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
-      zIndex: 100,
-    }}>
+    <div
+      onClick={onClose}
+      style={{
+        position: 'fixed', inset: 0,
+        background: 'rgba(0,0,0,0.7)',
+        backdropFilter: 'blur(8px)',
+        WebkitBackdropFilter: 'blur(8px)',
+        display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
+        zIndex: 100,
+      }}
+    >
       <div
         className="animate-slide-up"
+        onClick={e => e.stopPropagation()}
         style={{
           background: 'var(--surface)',
           borderTop: '1px solid var(--border-strong)',
@@ -287,7 +291,17 @@ export default function SetEditModal({ set, stats, isCurrent, prevSet, nextSet, 
         {view === 'edit' && (
           <>
             <div style={{ display: 'flex', gap: 10 }}>
-              <button onClick={onClose} style={{ ...btnBase, background: 'var(--surface-3)', color: 'var(--text-muted)', border: '1px solid var(--border)' }}>
+              <button
+                onClick={onClose}
+                disabled={!hasChanges}
+                style={{
+                  ...btnBase, flex: 1,
+                  background: hasChanges ? 'var(--surface-3)' : 'transparent',
+                  color: hasChanges ? 'var(--text-muted)' : 'var(--text-faint)',
+                  border: hasChanges ? '1px solid var(--border)' : '1px solid transparent',
+                  cursor: hasChanges ? 'pointer' : 'default',
+                }}
+              >
                 Cancel
               </button>
               <button
@@ -295,6 +309,7 @@ export default function SetEditModal({ set, stats, isCurrent, prevSet, nextSet, 
                 disabled={!canSave}
                 style={{
                   ...btnBase,
+                  flex: 2,
                   background: canSave ? 'var(--cyan)' : 'var(--surface-3)',
                   color: canSave ? '#06090f' : 'var(--text-faint)',
                   border: canSave ? 'none' : '1px solid var(--border)',
@@ -307,10 +322,9 @@ export default function SetEditModal({ set, stats, isCurrent, prevSet, nextSet, 
             <button
               onClick={() => setView('confirmDelete')}
               style={{
-                width: '100%', border: '1px solid rgba(248,113,113,0.3)',
-                borderRadius: 12, padding: '13px 0', fontSize: 14, fontWeight: 600,
-                fontFamily: 'inherit', cursor: 'pointer',
-                background: 'transparent', color: 'var(--rose)',
+                width: '100%', border: 'none', background: 'transparent',
+                padding: '6px 0', fontSize: 13, fontWeight: 500,
+                fontFamily: 'inherit', cursor: 'pointer', color: 'var(--text-faint)',
               }}
             >
               Delete Set
@@ -382,6 +396,16 @@ export default function SetEditModal({ set, stats, isCurrent, prevSet, nextSet, 
                   </button>
                 ))}
             </div>
+            <button
+              onClick={onClose}
+              style={{
+                width: '100%', border: 'none', background: 'transparent',
+                padding: '6px 0', fontSize: 13, fontWeight: 500,
+                fontFamily: 'inherit', cursor: 'pointer', color: 'var(--text-faint)',
+              }}
+            >
+              Close
+            </button>
           </div>
         )}
       </div>

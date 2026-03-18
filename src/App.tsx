@@ -1,7 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuthContext } from './contexts/AuthContext'
 import { DataProvider } from './contexts/DataContext'
-import { SyncProvider } from './contexts/SyncContext'
 import AppShell from './components/layout/AppShell'
 import LoginView from './views/LoginView'
 import HomeView from './views/HomeView'
@@ -19,18 +18,16 @@ function AuthenticatedApp() {
 
   return (
     <DataProvider uid={user.uid}>
-      <SyncProvider uid={user.uid}>
-        <AppShell>
-          <Routes>
-            <Route path="/" element={<HomeView />} />
-            <Route path="/history" element={<HistoryView />} />
-            <Route path="/reports" element={<ReportsView />} />
-            <Route path="/settings" element={<SettingsPageView />} />
-            <Route path="/onboarding" element={<OnboardingView />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </AppShell>
-      </SyncProvider>
+      <AppShell>
+        <Routes>
+          <Route path="/" element={<HomeView />} />
+          <Route path="/history" element={<HistoryView />} />
+          <Route path="/reports" element={<ReportsView />} />
+          <Route path="/settings" element={<SettingsPageView />} />
+          <Route path="/onboarding" element={<OnboardingView />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </AppShell>
     </DataProvider>
   )
 }

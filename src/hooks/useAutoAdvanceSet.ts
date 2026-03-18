@@ -7,10 +7,11 @@ export function useAutoAdvanceSet() {
   const { treatment, sets, loaded } = useDataContext()
   const { startNewSet, updateTreatment } = useSets()
   const [autoAdvancedSets, setAutoAdvancedSets] = useState<number[]>([])
-  const hasRunRef = useRef(false)
+  const hasRunRef = useRef<number | null>(null)
 
   useEffect(() => {
-    if (!loaded || !treatment || sets.length === 0 || hasRunRef.current) return
+    if (!loaded || !treatment || sets.length === 0) return
+    if (hasRunRef.current === treatment.currentSetNumber) return
 
     const currentSet = sets.find(s => s.setNumber === treatment.currentSetNumber)
     if (!currentSet?.endDate) return  // legacy set with no endDate, skip
@@ -19,7 +20,7 @@ export function useAutoAdvanceSet() {
     const endDateNorm = currentSet.endDate.slice(0, 10)
     if (endDateNorm > today) return  // not yet expired
 
-    hasRunRef.current = true
+    hasRunRef.current = treatment.currentSetNumber
     const defaultDuration = treatment.defaultSetDurationDays
 
     ;(async () => {

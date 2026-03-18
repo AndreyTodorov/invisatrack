@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useSessions } from './useSessions'
-import { scheduleReminderNotification, cancelScheduledNotification } from '../services/notifications'
 import { diffMinutes, nowISO } from '../utils/time'
 
 interface TimerState {
@@ -34,19 +33,13 @@ export function useTimer(
   useEffect(() => { reminderRef.current = reminderThresholdMinutes }, [reminderThresholdMinutes])
   useEffect(() => { autoCapRef.current = autoCapMinutes }, [autoCapMinutes])
 
-  // Auto-cap check when active session changes
-  useEffect(() => {
-    if (!activeSession) return
-    const elapsed = diffMinutes(activeSession.startTime, nowISO())
-    if (elapsed >= autoCapRef.current) {
-      stopSession(activeSession.id).catch(console.error)
-      setTimerState(s => ({ ...s, autoCapped: true, isRunning: false, activeSessionId: null }))
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeSession?.id])
+  // Guards against auto-cap firing multiple times for the same session
+  const autoCapFiredRef = useRef(false)
 
-  // Tick interval
+  // Tick interval — also handles auto-cap on resume (first tick fires immediately)
   useEffect(() => {
+    autoCapFiredRef.current = false
+
     if (!activeSession) {
       if (intervalRef.current) clearInterval(intervalRef.current)
       setTimerState(s => ({ ...s, isRunning: false, elapsedMinutes: 0, activeSessionId: null }))
@@ -70,7 +63,9 @@ export function useTimer(
             osc.stop(ctx.currentTime + 0.3)
           } catch { /* audio not available */ }
         }
-        if (elapsed >= autoCapRef.current) {
+        if (elapsed >= autoCapRef.current && !autoCapFiredRef.current) {
+          autoCapFiredRef.current = true
+          if (intervalRef.current) { clearInterval(intervalRef.current); intervalRef.current = null }
           stopSession(activeSession.id).catch(console.error)
           newState.isRunning = false
           newState.autoCapped = true
@@ -87,7 +82,6 @@ export function useTimer(
 
   const start = useCallback(async () => {
     await startSession(currentSetNumber)
-    scheduleReminderNotification(reminderThresholdMinutes)
     setTimerState(s => ({
       ...s,
       elapsedMinutes: 0,
@@ -95,11 +89,10 @@ export function useTimer(
       reminderFired: false,
       autoCapped: false,
     }))
-  }, [startSession, currentSetNumber, reminderThresholdMinutes])
+  }, [startSession, currentSetNumber])
 
   const stop = useCallback(async () => {
     if (!activeSession) return
-    cancelScheduledNotification()
     await stopSession(activeSession.id)
     setTimerState(s => ({ ...s, isRunning: false, reminderFired: false }))
   }, [activeSession, stopSession])

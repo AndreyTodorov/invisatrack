@@ -23,20 +23,12 @@ vi.mock('../services/db', () => ({
   },
 }))
 
-vi.mock('../services/syncManager', () => ({
-  queueWrite: vi.fn(),
-}))
-
 vi.mock('../contexts/AuthContext', () => ({
   useAuthContext: vi.fn(() => ({ user: { uid: 'user1' } })),
 }))
 
 vi.mock('../contexts/DataContext', () => ({
   useDataContext: vi.fn(() => ({ sessions: [], setSessions: vi.fn() })),
-}))
-
-vi.mock('./useOnlineStatus', () => ({
-  useOnlineStatus: vi.fn(() => true),
 }))
 
 vi.mock('../utils/deviceId', () => ({
@@ -50,9 +42,7 @@ vi.mock('../utils/time', () => ({
 
 import { set as fbSet, update as fbUpdate, remove as fbRemove } from '../services/firebase'
 import { localDB } from '../services/db'
-import { queueWrite } from '../services/syncManager'
 import { useDataContext } from '../contexts/DataContext'
-import { useOnlineStatus } from './useOnlineStatus'
 
 const makeSession = (
   id: string,
@@ -80,13 +70,11 @@ beforeEach(() => {
   vi.mocked(localDB.sessions.put).mockResolvedValue(undefined as never)
   vi.mocked(localDB.sessions.update).mockResolvedValue(undefined as never)
   vi.mocked(localDB.sessions.delete).mockResolvedValue(undefined as never)
-  vi.mocked(queueWrite).mockResolvedValue(undefined as never)
   vi.mocked(useDataContext).mockReturnValue({ sessions: [], setSessions: vi.fn() } as never)
-  vi.mocked(useOnlineStatus).mockReturnValue(true)
 })
 
 describe('startSession', () => {
-  it('writes to localDB and Firebase when online', async () => {
+  it('writes to localDB and Firebase', async () => {
     const { result } = renderHook(() => useSessions())
     let sessionId: string | undefined
 
@@ -99,21 +87,6 @@ describe('startSession', () => {
       expect.objectContaining({ id: 'new-session-id', setNumber: 1, endTime: null, uid: 'user1' })
     )
     expect(fbSet).toHaveBeenCalled()
-    expect(queueWrite).not.toHaveBeenCalled()
-  })
-
-  it('queues write instead of Firebase when offline', async () => {
-    vi.mocked(useOnlineStatus).mockReturnValue(false)
-
-    const { result } = renderHook(() => useSessions())
-    await act(async () => {
-      await result.current.startSession(1)
-    })
-
-    expect(fbSet).not.toHaveBeenCalled()
-    expect(queueWrite).toHaveBeenCalledWith(
-      expect.objectContaining({ operation: 'set', path: 'users/user1/sessions/new-session-id' })
-    )
   })
 
   it('throws when a session is already active', async () => {
@@ -127,17 +100,6 @@ describe('startSession', () => {
       act(async () => { await result.current.startSession(1) })
     ).rejects.toThrow('already active')
   })
-
-  it('includes createdOffline flag correctly', async () => {
-    vi.mocked(useOnlineStatus).mockReturnValue(false)
-
-    const { result } = renderHook(() => useSessions())
-    await act(async () => { await result.current.startSession(2) })
-
-    expect(localDB.sessions.put).toHaveBeenCalledWith(
-      expect.objectContaining({ createdOffline: true, setNumber: 2 })
-    )
-  })
 })
 
 describe('stopSession', () => {
@@ -150,19 +112,6 @@ describe('stopSession', () => {
       expect.objectContaining({ endTime: '2026-03-17T10:00:00.000Z' })
     )
     expect(fbUpdate).toHaveBeenCalled()
-    expect(queueWrite).not.toHaveBeenCalled()
-  })
-
-  it('queues update when offline', async () => {
-    vi.mocked(useOnlineStatus).mockReturnValue(false)
-
-    const { result } = renderHook(() => useSessions())
-    await act(async () => { await result.current.stopSession('s1') })
-
-    expect(fbUpdate).not.toHaveBeenCalled()
-    expect(queueWrite).toHaveBeenCalledWith(
-      expect.objectContaining({ operation: 'update', path: 'users/user1/sessions/s1' })
-    )
   })
 })
 
@@ -221,25 +170,12 @@ describe('addManualSession', () => {
 })
 
 describe('deleteSession', () => {
-  it('removes from localDB and Firebase when online', async () => {
+  it('removes from localDB and Firebase', async () => {
     const { result } = renderHook(() => useSessions())
     await act(async () => { await result.current.deleteSession('s1') })
 
     expect(localDB.sessions.delete).toHaveBeenCalledWith('s1')
     expect(fbRemove).toHaveBeenCalled()
-    expect(queueWrite).not.toHaveBeenCalled()
-  })
-
-  it('queues delete when offline', async () => {
-    vi.mocked(useOnlineStatus).mockReturnValue(false)
-
-    const { result } = renderHook(() => useSessions())
-    await act(async () => { await result.current.deleteSession('s1') })
-
-    expect(fbRemove).not.toHaveBeenCalled()
-    expect(queueWrite).toHaveBeenCalledWith(
-      expect.objectContaining({ operation: 'delete', path: 'users/user1/sessions/s1' })
-    )
   })
 
   it('optimistically removes session from React state when deleted', async () => {
@@ -253,7 +189,6 @@ describe('deleteSession', () => {
     await act(async () => { await result.current.deleteSession('s1') })
 
     expect(setSessions).toHaveBeenCalledTimes(1)
-    // The updater passed to setSessions should filter out the deleted session
     const updater = setSessions.mock.calls[0][0]
     const prev = [
       makeSession('s1', '2026-03-17T09:00:00.000Z', null),

@@ -1,21 +1,14 @@
 import Dexie, { type Table } from 'dexie'
-import type { Session, AlignerSet, UserProfile, Treatment, SyncQueueItem } from '../types'
+import type { Session, AlignerSet, UserProfile, Treatment } from '../types'
 
 interface LocalProfile extends UserProfile { uid: string }
 interface LocalTreatment extends Treatment { uid: string }
-
-export interface DeadLetterItem extends SyncQueueItem {
-  failedAt: string
-  reason: string
-}
 
 export class AppDB extends Dexie {
   sessions!: Table<Session & { uid: string }>
   sets!: Table<AlignerSet & { uid: string }>
   profile!: Table<LocalProfile>
   treatment!: Table<LocalTreatment>
-  syncQueue!: Table<SyncQueueItem>
-  syncDeadLetter!: Table<DeadLetterItem>
 
   constructor() {
     super('AlignerTrackDB')
@@ -26,6 +19,10 @@ export class AppDB extends Dexie {
       treatment: 'uid',
       syncQueue: '++id, timestamp, deviceId',
       syncDeadLetter: '++id, timestamp, deviceId',
+    })
+    this.version(2).stores({
+      syncQueue: null,
+      syncDeadLetter: null,
     })
   }
 }

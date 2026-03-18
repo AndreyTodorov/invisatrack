@@ -40,7 +40,14 @@ export default function SessionEditModal({ session, onClose }: Props) {
   // FIX SF-2: in-UI confirmation instead of window.confirm()
   const [confirmingDelete, setConfirmingDelete] = useState(false)
 
+  const initialStartTime = toDatetimeLocal(session.startTime, session.startTimezoneOffset)
+  const initialEndTime = session.endTime
+    ? toDatetimeLocal(session.endTime, session.endTimezoneOffset ?? session.startTimezoneOffset)
+    : ''
+  const hasChanges = startTime !== initialStartTime || endTime !== initialEndTime
+
   const handleSave = async () => {
+    if (!hasChanges) return
     try {
       await updateSession(session.id, {
         startTime: new Date(startTime).toISOString(),
@@ -58,16 +65,20 @@ export default function SessionEditModal({ session, onClose }: Props) {
   }
 
   return (
-    <div style={{
-      position: 'fixed', inset: 0,
-      background: 'rgba(0,0,0,0.7)',
-      backdropFilter: 'blur(8px)',
-      WebkitBackdropFilter: 'blur(8px)',
-      display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
-      zIndex: 100,
-    }}>
+    <div
+      onClick={onClose}
+      style={{
+        position: 'fixed', inset: 0,
+        background: 'rgba(0,0,0,0.7)',
+        backdropFilter: 'blur(8px)',
+        WebkitBackdropFilter: 'blur(8px)',
+        display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
+        zIndex: 100,
+      }}
+    >
       <div
         className="animate-slide-up"
+        onClick={e => e.stopPropagation()}
         style={{
           background: 'var(--surface)',
           borderTop: '1px solid var(--border-strong)',
@@ -120,17 +131,47 @@ export default function SessionEditModal({ session, onClose }: Props) {
             </div>
           </div>
         ) : (
-          <div style={{ display: 'flex', gap: 10 }}>
-            <button onClick={() => setConfirmingDelete(true)} style={{ ...btnBase, background: 'var(--rose-bg)', color: 'var(--rose)', border: '1px solid rgba(248,113,113,0.2)' }}>
-              Delete
+          <>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button
+                onClick={onClose}
+                disabled={!hasChanges}
+                style={{
+                  ...btnBase, flex: 1,
+                  background: hasChanges ? 'var(--surface-3)' : 'transparent',
+                  color: hasChanges ? 'var(--text-muted)' : 'var(--text-faint)',
+                  border: hasChanges ? '1px solid var(--border)' : '1px solid transparent',
+                  cursor: hasChanges ? 'pointer' : 'default',
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSave}
+                disabled={!hasChanges}
+                style={{
+                  ...btnBase,
+                  flex: 2,
+                  background: hasChanges ? 'var(--cyan)' : 'var(--surface-3)',
+                  color: hasChanges ? '#06090f' : 'var(--text-faint)',
+                  border: hasChanges ? 'none' : '1px solid var(--border)',
+                  cursor: hasChanges ? 'pointer' : 'default',
+                }}
+              >
+                Save
+              </button>
+            </div>
+            <button
+              onClick={() => setConfirmingDelete(true)}
+              style={{
+                width: '100%', border: 'none', background: 'transparent',
+                padding: '6px 0', fontSize: 13, fontWeight: 500,
+                fontFamily: 'inherit', cursor: 'pointer', color: 'var(--text-faint)',
+              }}
+            >
+              Delete Session
             </button>
-            <button onClick={onClose} style={{ ...btnBase, background: 'var(--surface-3)', color: 'var(--text-muted)', border: '1px solid var(--border)' }}>
-              Cancel
-            </button>
-            <button onClick={handleSave} style={{ ...btnBase, background: 'var(--cyan)', color: '#06090f' }}>
-              Save
-            </button>
-          </div>
+          </>
         )}
       </div>
     </div>
