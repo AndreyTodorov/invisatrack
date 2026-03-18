@@ -107,8 +107,7 @@ src/
 │
 ├── contexts/
 │   ├── AuthContext.tsx            # Google sign-in, current user state
-│   ├── DataContext.tsx            # Firebase real-time sync → React state
-│   └── SyncContext.tsx            # Offline write queue management
+│   └── DataContext.tsx            # Firebase real-time sync → React state
 │
 ├── hooks/
 │   ├── useTimer.ts               # Timer state, reminder, auto-cap logic
@@ -116,14 +115,11 @@ src/
 │   ├── useSets.ts                # Aligner set management
 │   ├── useReports.ts             # Statistics, streak, per-set analytics
 │   ├── useAuth.ts                # Thin wrapper around AuthContext
-│   ├── useSync.ts                # Thin wrapper around SyncContext
-│   └── useOnlineStatus.ts        # navigator.onLine with event listener
+│   └── useAutoAdvanceSet.ts      # Auto-advance to next set when endDate passes
 │
 ├── services/
 │   ├── firebase.ts               # Firebase init, all ref helpers, CRUD helpers
-│   ├── db.ts                     # Dexie schema (sessions, syncQueue, syncDeadLetter)
-│   ├── syncManager.ts            # Drain offline queue with exponential backoff
-│   └── notifications.ts          # Browser push notification helpers
+│   └── db.ts                     # Dexie schema (sessions, sets, profile, treatment)
 │
 ├── utils/
 │   ├── time.ts                   # Date/time helpers (see Utilities Reference)
@@ -148,6 +144,9 @@ src/
 │   ├── sessions/
 │   │   ├── AddSessionModal.tsx   # Manual session creation bottom sheet
 │   │   └── SessionEditModal.tsx  # Edit/delete session bottom sheet
+│   ├── sets/
+│   │   ├── StartNewSetModal.tsx  # Start next aligner set bottom sheet
+│   │   └── SetEditModal.tsx      # Edit/delete set with stats context
 │   ├── reports/
 │   │   ├── WearChart.tsx         # Recharts bar chart (wear % by day)
 │   │   ├── StatsGrid.tsx         # Summary stats (avg wear, removals, …)
@@ -176,35 +175,27 @@ Google Auth
     ▼
 AuthContext  ──(uid)──▶  DataContext
                               │
-              ┌───────────────┼───────────────┐
-              ▼               ▼               ▼
-        IndexedDB        Firebase RTDB    SyncContext
-        (instant)        (real-time)     (offline queue)
-              │               │
-              └───────────────┘
-                     │
-                React state (sessions, sets, profile, treatment)
-                     │
-              hooks (useSessions, useSets, useTimer, useReports)
-                     │
-                 Views / Components
+              ┌───────────────┴───────────────┐
+              ▼                               ▼
+        IndexedDB (Dexie)             Firebase RTDB
+        (local cache)                 (real-time)
+                     │               │
+                     └───────────────┘
+                            │
+               React state (sessions, sets, profile, treatment)
+                            │
+         hooks (useSessions, useSets, useTimer, useReports, useAutoAdvanceSet)
+                            │
+                      Views / Components
 ```
 
-### Offline strategy
-
-1. **Writes** always go to IndexedDB first, then attempt Firebase.
-2. If offline, the write is queued in `syncQueue` (Dexie table).
-3. `SyncContext` watches `navigator.onLine`; when back online it calls `drainSyncQueue()`.
-4. Each item is retried up to `SYNC_MAX_RETRIES` (3) times with exponential backoff.
-5. Permanently-failing items are moved to `syncDeadLetter`.
-
-### Context provider tree (`main.tsx`)
+### Context provider tree (`main.tsx` + `App.tsx`)
 
 ```
-AuthProvider
-  └── DataProvider
-        └── SyncProvider
-              └── RouterProvider (App.tsx)
+HashRouter (main.tsx)
+  └── AuthProvider (App.tsx)
+        └── DataProvider (App.tsx, mounted after sign-in)
+              └── Routes / Views
 ```
 
 ---
@@ -244,8 +235,7 @@ interface AlignerSet {
   id: string
   setNumber: number
   startDate: string                  // Local date "YYYY-MM-DD"
-  endDate: string | null
-  durationDaysOverride: number | null
+  endDate: string | null             // Always set for new sets; null for legacy open sets
   note: string | null
 }
 
@@ -305,16 +295,9 @@ formatDateKey(localDate)
 
 Sessions that span local midnight are split by `splitSessionByDay()` so stats credit the correct day.
 
-### Offline sync
+### Auto-advance sets
 
-```typescript
-// syncManager.ts
-drainSyncQueue(uid)
-// Processes syncQueue, retries with exponential backoff
-// Items that fail SYNC_MAX_RETRIES times are moved to syncDeadLetter
-```
-
-`DataContext` merges incoming Firebase snapshots with any local-only (pending offline) sessions by retaining sessions where `createdOffline = true` and `endTime == null` that Firebase doesn't know about yet (FIX CR-2).
+`useAutoAdvanceSet` runs on mount (once per `currentSetNumber`). If the current set's `endDate` has passed it automatically creates the next set(s) and advances `treatment.currentSetNumber` forward, chaining through any consecutive expired sets in one pass. Pre-existing sets in the chain are recognised and skipped (only `treatment` is updated for those).
 
 ---
 
@@ -327,8 +310,7 @@ drainSyncQueue(uid)
 | `useSets()` | `{ sets, startNewSet, endCurrentSet, updateTreatment }` | Manages `sets/` and `treatment/` in Firebase |
 | `useReports(goalMinutes)` | `{ dailyStats, weekStats, streak, allSegments }` | Computed from sessions in DataContext |
 | `useAuth()` | `{ user, loading, signIn, signOut }` | Thin wrapper around AuthContext |
-| `useSync()` | `{ status, queueCount, triggerSync }` | Thin wrapper around SyncContext |
-| `useOnlineStatus()` | `boolean` | `true` = online |
+| `useAutoAdvanceSet()` | `{ autoAdvancedSets, dismiss }` | Auto-advances expired sets on mount |
 
 ---
 
@@ -357,6 +339,13 @@ drainSyncQueue(uid)
 |---|---|---|
 | `AddSessionModal` | `onClose` | `datetime-local` inputs converted from/to UTC with offset |
 | `SessionEditModal` | `session, onClose` | Includes delete with in-UI confirmation |
+
+### Sets
+
+| Component | Props | Notes |
+|---|---|---|
+| `StartNewSetModal` | `currentSetNumber, defaultDurationDays, onClose` | Creates the next set with configurable start date and duration |
+| `SetEditModal` | `set, stats, isCurrent, prevSet, nextSet, onClose` | Edit dates/note, delete set; shows stats in context |
 
 ### Reports
 
@@ -394,7 +383,6 @@ DEFAULT_AUTO_CAP_MINUTES           = 120    // Auto-stop at 2 hours
 DEFAULT_SET_DURATION_DAYS          = 7      // One tray per week
 MINUTES_PER_DAY                    = 1440  // 24 × 60
 MAX_SESSION_DURATION_HOURS         = 24     // Validation ceiling for manual sessions
-SYNC_MAX_RETRIES                   = 3      // Max offline queue retry attempts
 ```
 
 ---
@@ -444,7 +432,6 @@ src/utils/time.test.ts
 src/utils/csv.test.ts
 src/utils/deviceId.test.ts
 src/utils/sessionValidation.test.ts
-src/services/syncManager.test.ts
 src/components/dashboard/DailySummary.test.tsx
 src/components/dashboard/SessionList.test.tsx
 ```
@@ -453,13 +440,13 @@ src/components/dashboard/SessionList.test.tsx
 
 - `useDataContext` is mocked at module level in hook tests. Always include `setSessions: vi.fn()` in the mock return value alongside `sessions`, `sets`, `profile`, `treatment`, and `loaded`.
 - `vi.useFakeTimers()` / `vi.useRealTimers()` are used in `useTimer.test.ts` to control `setInterval` without test timeouts.
-- Firebase services are fully mocked; no tests hit the network.
+- Firebase and Dexie services are fully mocked; no tests hit the network or IndexedDB.
 
 ---
 
 ## CI/CD
 
-### `tests.yml` — runs on every PR and push to `main`/`develop`
+### `tests.yml` — runs on every PR and push to `main`/`dev`
 
 1. Checkout, Node 22, `npm ci`
 2. `npm test` (Vitest)
@@ -492,10 +479,8 @@ src/components/dashboard/SessionList.test.tsx
 | **CR-1** | useSessions | Dynamic `require()` of Firebase | All imports at module top |
 | **CR-2** | DataContext | `onValue` snapshot overwrote pending offline writes | Merge: retain `createdOffline=true` sessions absent from Firebase |
 | **CR-3** | useSessions | Multiple concurrent active sessions possible | Guard: `sessions.find(s => s.endTime == null)` before `startSession` |
-| **CR-4** | SyncContext | Stale closures in effect | Add `online` + `triggerSync` to dependency array |
 | **CR-5** | SessionEditModal | UTC ↔ local conversion for `datetime-local` input | Manual conversion using stored timezone offset |
 | **CR-6** | useReports | "Today" computed in UTC not local time | Use `new Date().getTimezoneOffset()` to compute local today key |
-| **CR-7** | syncManager | Permanently-failing items clog sync queue | Move to `syncDeadLetter` after `SYNC_MAX_RETRIES` |
 | **OS-4** | ReportsView | Date range computed in UTC | Apply device timezone offset when computing range boundaries |
 | **SF-2** | SettingsView, SessionEditModal | `window.confirm()` blocked in some browsers/PWAs | In-UI confirmation dialogs instead |
 | **SF-3** | useSessions | Double-tap creates two simultaneous sessions | `isSubmittingRef` prevents concurrent writes |
