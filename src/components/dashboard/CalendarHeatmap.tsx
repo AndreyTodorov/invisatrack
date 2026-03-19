@@ -69,7 +69,8 @@ export default function CalendarHeatmap({ dateStatsMap, sessionDates, goalMinute
               onClick={() => setOffset(o => o - 1)}
               style={{
                 background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit',
-                fontSize: 18, color: 'var(--text-muted)', padding: '0 4px', lineHeight: 1,
+                fontSize: 18, color: 'var(--text-muted)', lineHeight: 1,
+                padding: '10px 16px', margin: '-10px -16px',
               }}
             >
               ‹
@@ -82,7 +83,7 @@ export default function CalendarHeatmap({ dateStatsMap, sessionDates, goalMinute
                 background: 'none', border: 'none', cursor: isCurrentMonth ? 'default' : 'pointer',
                 fontFamily: 'inherit', fontSize: 18,
                 color: isCurrentMonth ? 'var(--surface-3)' : 'var(--text-muted)',
-                padding: '0 4px', lineHeight: 1,
+                lineHeight: 1, padding: '10px 16px', margin: '-10px -16px',
               }}
             >
               ›
