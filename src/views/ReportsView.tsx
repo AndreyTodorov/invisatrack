@@ -4,6 +4,7 @@ import { useDataContext } from '../contexts/DataContext'
 import WearChart from '../components/reports/WearChart'
 import StatsGrid from '../components/reports/StatsGrid'
 import SetReportCard from '../components/reports/SetReportCard'
+import CalendarHeatmap from '../components/dashboard/CalendarHeatmap'
 import { DEFAULT_DAILY_WEAR_GOAL_MINUTES } from '../constants'
 import { dateDiffDays, formatDuration } from '../utils/time'
 import type { DailyStats } from '../types'
@@ -191,6 +192,20 @@ export default function ReportsView() {
           <WearChart data={stats} goalMinutes={goalMinutes} period={period as '7d' | 'week' | 'month'} />
           <StatsGrid stats={stats} goalMinutes={goalMinutes} />
           <BestWorstCallout stats={stats} />
+          {period === 'month' && (() => {
+            const sessionDates = new Set(allSegments.map(s => s.date))
+            const sessionDatesArr = Array.from(sessionDates)
+            const statsArr = getDailyStatsRange(sessionDatesArr)
+            const dateStatsMap = new Map(sessionDatesArr.map((d, i) => [d, statsArr[i]]))
+            return (
+              <CalendarHeatmap
+                dateStatsMap={dateStatsMap}
+                sessionDates={sessionDates}
+                goalMinutes={goalMinutes}
+                today={todayStr}
+              />
+            )
+          })()}
         </>
       )}
 

@@ -3,7 +3,6 @@ import { useSessions } from '../hooks/useSessions'
 import { useDataContext } from '../contexts/DataContext'
 import { useReports } from '../hooks/useReports'
 import SessionList from '../components/dashboard/SessionList'
-import CalendarHeatmap from '../components/dashboard/CalendarHeatmap'
 import SessionEditModal from '../components/sessions/SessionEditModal'
 import AddSessionModal from '../components/sessions/AddSessionModal'
 import SetEditModal from '../components/sets/SetEditModal'
@@ -59,7 +58,6 @@ export default function HistoryView() {
   // Precompute stats for all session dates at once
   const allDateStatsArr = getDailyStatsRange(sortedDates)
   const allDateStatsMap = new Map(sortedDates.map((d, i) => [d, allDateStatsArr[i]]))
-  const sessionDatesSet = new Set(sortedDates)
 
   // Apply filter
   const filteredDates = sortedDates.filter(date => {
@@ -166,15 +164,7 @@ export default function HistoryView() {
             ))}
           </div>
 
-          {/* (A) Calendar heatmap */}
-          <CalendarHeatmap
-            dateStatsMap={allDateStatsMap}
-            sessionDates={sessionDatesSet}
-            goalMinutes={goalMinutes}
-            today={today}
-          />
-
-          {filteredDates.length === 0 && (
+{filteredDates.length === 0 && (
             <p style={{ color: 'var(--text-faint)', textAlign: 'center', padding: '40px 0', fontSize: 14 }}>
               {filter === 'all' ? 'No sessions yet' : 'No sessions match this filter'}
             </p>
