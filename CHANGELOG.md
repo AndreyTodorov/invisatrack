@@ -1,3 +1,11 @@
+# [1.11.0](https://github.com/AndreyTodorov/invisatrack/compare/v1.10.0...v1.11.0) (2026-03-19)
+
+
+### Features
+
+* **home:** show daily goal compliance heatmap in aligner set section ([8dcc84f](https://github.com/AndreyTodorov/invisatrack/commit/8dcc84f46f21ae7ca6e7db210c92ed362ddcccf2))
+* **ui:** add swipe gesture navigation for Reports and History tabs ([8a6859f](https://github.com/AndreyTodorov/invisatrack/commit/8a6859f650394e1f2f5d87717375b70bada400a6))
+
 # [1.10.0](https://github.com/AndreyTodorov/invisatrack/compare/v1.9.1...v1.10.0) (2026-03-19)
 
 
