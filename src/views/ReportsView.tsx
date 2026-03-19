@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react'
+import { useSwipeTab } from '../hooks/useSwipeTab'
 import { useReports } from '../hooks/useReports'
 import { useDataContext } from '../contexts/DataContext'
 import WearChart from '../components/reports/WearChart'
@@ -15,11 +16,12 @@ function formatDayLabel(dateStr: string): string {
   })
 }
 
-function BestWorstCallout({ stats }: { stats: DailyStats[] }) {
-  if (stats.length < 2) return null
+function BestWorstCallout({ stats, todayStr }: { stats: DailyStats[], todayStr: string }) {
+  const completedStats = stats.filter(s => s.date < todayStr)
+  if (completedStats.length < 2) return null
 
-  const best = stats.reduce((a, b) => a.wearPercentage >= b.wearPercentage ? a : b)
-  const worst = stats.reduce((a, b) => a.wearPercentage <= b.wearPercentage ? a : b)
+  const best = completedStats.reduce((a, b) => a.wearPercentage >= b.wearPercentage ? a : b)
+  const worst = completedStats.reduce((a, b) => a.wearPercentage <= b.wearPercentage ? a : b)
 
   if (best.date === worst.date) return null
 
@@ -117,6 +119,12 @@ export default function ReportsView() {
     localStorage.setItem('reports-period', p)
     setPeriod(p)
   }
+
+  const swipeHandlers = useSwipeTab((dir) => {
+    const idx = PERIOD_ORDER.indexOf(period)
+    const next = PERIOD_ORDER[dir === 'left' ? idx + 1 : idx - 1]
+    if (next) handleSetPeriod(next)
+  })
   const { profile, sets } = useDataContext()
   const goalMinutes = profile?.dailyWearGoalMinutes ?? DEFAULT_DAILY_WEAR_GOAL_MINUTES
   const { getDailyStatsRange, getSetStats, allSegments, streak } = useReports(goalMinutes)
@@ -143,7 +151,7 @@ export default function ReportsView() {
     : []
 
   return (
-    <div style={{ padding: '0 16px 16px', maxWidth: 440, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 16 }}>
+    <div style={{ padding: '0 16px 16px', maxWidth: 440, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 16 }} {...swipeHandlers}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 20 }}>
         <h1 style={{ fontSize: 20, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.01em' }}>
           Reports
@@ -206,7 +214,7 @@ export default function ReportsView() {
         <>
           <WearChart data={stats} goalMinutes={goalMinutes} period={period as '7d' | 'week' | 'month'} />
           <StatsGrid stats={stats} goalMinutes={goalMinutes} />
-          <BestWorstCallout stats={stats} />
+          <BestWorstCallout stats={stats} todayStr={todayStr} />
           {period === 'month' && (() => {
             const sessionDates = new Set(allSegments.map(s => s.date))
             const sessionDatesArr = Array.from(sessionDates)

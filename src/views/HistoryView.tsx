@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react'
+import { useSwipeTab } from '../hooks/useSwipeTab'
 import { useSessions } from '../hooks/useSessions'
 import { useDataContext } from '../contexts/DataContext'
 import { useReports } from '../hooks/useReports'
@@ -38,6 +39,12 @@ export default function HistoryView() {
     setTabEnterClass(dir)
     setTab(t)
   }
+
+  const swipeHandlers = useSwipeTab((dir) => {
+    const idx = TAB_ORDER.indexOf(tab)
+    const next = TAB_ORDER[dir === 'left' ? idx + 1 : idx - 1]
+    if (next) handleSetTab(next)
+  })
   const [filter, setFilter] = useState<Filter>('all')
   const [collapsedMonths, setCollapsedMonths] = useState<Set<string>>(new Set())
   const [editingSession, setEditingSession] = useState<Session | null>(null)
@@ -97,7 +104,7 @@ export default function HistoryView() {
   }
 
   return (
-    <div style={{ padding: '0 16px 16px', maxWidth: 440, margin: '0 auto' }}>
+    <div style={{ padding: '0 16px 16px', maxWidth: 440, margin: '0 auto' }} {...swipeHandlers}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 20, marginBottom: 16 }}>
         <h1 style={{ fontSize: 20, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.01em' }}>History</h1>
         {tab === 'sessions' && (
