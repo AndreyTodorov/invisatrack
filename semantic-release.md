@@ -64,7 +64,7 @@ This project uses [semantic-release](https://semantic-release.gitbook.io/) to au
 
 ### Step 6 — Workflow (already configured)
 
-The release workflow at `.github/workflows/release.yml` already uses the app token:
+The release workflow at `.github/workflows/release.yml` already uses the app token. The token must be generated **before** checkout so that git credentials are configured with the app token from the start — otherwise semantic-release's push will use the default Actions token, which has no bypass.
 
 ```yaml
 - name: Generate app token
@@ -73,6 +73,12 @@ The release workflow at `.github/workflows/release.yml` already uses the app tok
   with:
     app-id: ${{ secrets.APP_ID }}
     private-key: ${{ secrets.APP_PRIVATE_KEY }}
+
+- name: Checkout
+  uses: actions/checkout@v4
+  with:
+    fetch-depth: 0
+    token: ${{ steps.app-token.outputs.token }}
 
 - name: Release
   env:
@@ -98,8 +104,11 @@ Check the workflow run logs under **Actions → Release** for details.
 
 ## Troubleshooting
 
+**Push still rejected despite bypass actor being set**
+The app token must be generated before `checkout` and passed via `token:`. If checkout runs first, git credentials are set to the default Actions token — semantic-release's push will use those credentials instead of the app token, bypassing the bypass.
+
 **`HttpError: Resource not accessible by integration`**
-The app is not installed on the repo or the bypass actor was not added to the ruleset.
+The app is not installed on the repo or the bypass actor was not added to the ruleset. Verify by hitting `https://api.github.com/repos/OWNER/REPO/rulesets/RULESET_ID` and confirming `bypass_actors` is non-empty.
 
 **`Error: secretOrPrivateKey must have a value`**
 The `APP_PRIVATE_KEY` secret is missing or malformed. Make sure the full PEM contents are pasted, including header/footer lines.
