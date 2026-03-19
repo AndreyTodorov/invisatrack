@@ -396,6 +396,10 @@ export default function SettingsPageView() {
       >
         Sign Out
       </button>
+
+      <p style={{ textAlign: 'center', fontSize: 11, color: 'var(--text-faint)', margin: 0 }}>
+        v{__APP_VERSION__} · {__BUILD_DATE__}
+      </p>
     </div>
   )
 }
