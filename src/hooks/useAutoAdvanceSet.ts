@@ -61,6 +61,7 @@ export function useAutoAdvanceSet() {
         setAutoAdvancedSets(advanced)
       }
     })()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loaded, treatment?.currentSetNumber, sets.length])
 
   return { autoAdvancedSets, dismiss: () => setAutoAdvancedSets([]) }

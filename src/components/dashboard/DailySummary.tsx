@@ -24,7 +24,7 @@ export default function DailySummary({ totalOffMinutes, removals, goalMinutes, s
     if (activeMinutes > 0) return
     const id = setInterval(() => setTick(t => t + 1), 1000)
     return () => clearInterval(id)
-  }, [activeMinutes > 0])
+  }, [activeMinutes])
 
   const now = new Date()
   const currentMinutes = now.getHours() * 60 + now.getMinutes() + now.getSeconds() / 60

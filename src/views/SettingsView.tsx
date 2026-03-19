@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useAuthContext } from '../contexts/AuthContext'
 import { useDataContext } from '../contexts/DataContext'
 import { useSets } from '../hooks/useSets'
@@ -108,13 +108,13 @@ export default function SettingsPageView() {
   const [defaultDuration, setDefaultDuration] = useState(7)
 
   // Track initial values to detect unsaved changes
-  const profileInitRef = useRef({
+  const [profileInit, setProfileInit] = useState({
     goalHours: Math.floor(DEFAULT_DAILY_WEAR_GOAL_MINUTES / 60),
     goalMins: DEFAULT_DAILY_WEAR_GOAL_MINUTES % 60,
     reminderMins: DEFAULT_REMINDER_THRESHOLD_MINUTES,
     autoCapMins: DEFAULT_AUTO_CAP_MINUTES,
   })
-  const treatmentInitRef = useRef({ totalSets: '', defaultDuration: 7 })
+  const [treatmentInit, setTreatmentInit] = useState({ totalSets: '', defaultDuration: 7 })
 
   const [profileSaveState, setProfileSaveState] = useState<SaveState>('idle')
   const [treatmentSaveState, setTreatmentSaveState] = useState<SaveState>('idle')
@@ -127,10 +127,11 @@ export default function SettingsPageView() {
 
   // Current set duration override
   const [setDurationOverride, setSetDurationOverride] = useState<string>('')
-  const setDurationOverrideInitRef = useRef<string>('')
+  const [setDurationOverrideInit, setSetDurationOverrideInit] = useState<string>('')
   const [setDurationSaveState, setSetDurationSaveState] = useState<SaveState>('idle')
 
   useEffect(() => {
+    /* eslint-disable react-hooks/set-state-in-effect */
     if (profile) {
       const h = Math.floor(profile.dailyWearGoalMinutes / 60)
       const m = profile.dailyWearGoalMinutes % 60
@@ -138,14 +139,14 @@ export default function SettingsPageView() {
       setGoalMins(m)
       setReminderMins(profile.reminderThresholdMinutes)
       setAutoCapMins(profile.autoCapMinutes)
-      profileInitRef.current = { goalHours: h, goalMins: m, reminderMins: profile.reminderThresholdMinutes, autoCapMins: profile.autoCapMinutes }
+      setProfileInit({ goalHours: h, goalMins: m, reminderMins: profile.reminderThresholdMinutes, autoCapMins: profile.autoCapMinutes })
     }
     if (treatment) {
       const ts = treatment.totalSets ? String(treatment.totalSets) : ''
       const dd = treatment.defaultSetDurationDays
       setTotalSets(ts)
       setDefaultDuration(dd)
-      treatmentInitRef.current = { totalSets: ts, defaultDuration: dd }
+      setTreatmentInit({ totalSets: ts, defaultDuration: dd })
 
       // Pre-fill current set's duration (derived from endDate - startDate)
       const currentSet = sets.find(s => s.setNumber === treatment.currentSetNumber)
@@ -153,20 +154,19 @@ export default function SettingsPageView() {
         ? String(dateDiffDays(currentSet.startDate, currentSet.endDate))
         : ''
       setSetDurationOverride(overrideStr)
-      setDurationOverrideInitRef.current = overrideStr
+      setSetDurationOverrideInit(overrideStr)
     }
+    /* eslint-enable react-hooks/set-state-in-effect */
   }, [profile, treatment, sets])
 
   // Dirty detection
-  const init = profileInitRef.current
   const profileDirty =
-    goalHours !== init.goalHours ||
-    goalMins !== init.goalMins ||
-    reminderMins !== init.reminderMins ||
-    autoCapMins !== init.autoCapMins
+    goalHours !== profileInit.goalHours ||
+    goalMins !== profileInit.goalMins ||
+    reminderMins !== profileInit.reminderMins ||
+    autoCapMins !== profileInit.autoCapMins
 
-  const ti = treatmentInitRef.current
-  const treatmentDirty = totalSets !== ti.totalSets || defaultDuration !== ti.defaultDuration
+  const treatmentDirty = totalSets !== treatmentInit.totalSets || defaultDuration !== treatmentInit.defaultDuration
 
   // Validation
   const totalGoalMins = goalHours * 60 + goalMins
@@ -206,7 +206,7 @@ export default function SettingsPageView() {
       }
       await update(ref(db, `users/${user.uid}/profile`), updates)
       await localDB.profile.update(user.uid, updates)
-      profileInitRef.current = { goalHours, goalMins, reminderMins, autoCapMins }
+      setProfileInit({ goalHours, goalMins, reminderMins, autoCapMins })
       setTouched(prev => ({ ...prev, goalHours: false, goalMins: false, reminderMins: false, autoCapMins: false }))
       setProfileSaveState('saved')
       setTimeout(() => setProfileSaveState('idle'), 2000)
@@ -225,7 +225,7 @@ export default function SettingsPageView() {
         totalSets: totalSets ? parseInt(totalSets) : null,
         defaultSetDurationDays: defaultDuration,
       })
-      treatmentInitRef.current = { totalSets, defaultDuration }
+      setTreatmentInit({ totalSets, defaultDuration })
       setTouched(prev => ({ ...prev, defaultDuration: false }))
       setTreatmentSaveState('saved')
       setTimeout(() => setTreatmentSaveState('idle'), 2000)
@@ -243,7 +243,7 @@ export default function SettingsPageView() {
     try {
       const newEndDate = addDays(currentSet.startDate, parseInt(setDurationOverride))
       await updateSet(currentSet.id, { endDate: newEndDate })
-      setDurationOverrideInitRef.current = setDurationOverride
+      setSetDurationOverrideInit(setDurationOverride)
       setSetDurationSaveState('saved')
       setTimeout(() => setSetDurationSaveState('idle'), 2000)
     } catch {
@@ -346,7 +346,7 @@ export default function SettingsPageView() {
         const currentSet = sets.find(s => s.setNumber === treatment.currentSetNumber)
         const defaultDur = treatment.defaultSetDurationDays
         const currentDur = currentSet?.endDate ? dateDiffDays(currentSet.startDate, currentSet.endDate) : defaultDur
-        const overrideDirty = setDurationOverride !== setDurationOverrideInitRef.current
+        const overrideDirty = setDurationOverride !== setDurationOverrideInit
         const overrideError: string | null = setDurationOverride !== ''
           ? parseInt(setDurationOverride) < 1 ? 'Minimum 1 day'
           : parseInt(setDurationOverride) > 90 ? 'Maximum 90 days'
