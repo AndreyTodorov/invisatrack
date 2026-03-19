@@ -221,27 +221,15 @@ export default function TimerButton({ isRunning, onPress, disabled, budgetPercen
           </>
         ) : (
           <>
-            {budgetPercent >= 100 ? (
-              <>
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="12" cy="12" r="9"/>
-                  <path d="M12 8v4M12 16h.01"/>
-                </svg>
-                <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', textAlign: 'center', lineHeight: 1.3 }}>
-                  Limit<br/>Reached
-                </span>
-              </>
-            ) : (
-              <>
-                <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', textAlign: 'center', lineHeight: 1.3 }}>
-                  Remove<br/>Aligners
-                </span>
-                <div style={{ width: 36, height: 1, background: 'rgba(255,255,255,0.1)', margin: '5px 0 3px' }} />
-                <span style={{ fontSize: 9, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', opacity: 0.4 }}>
-                  Hold to start
-                </span>
-              </>
-            )}
+            <>
+              <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', textAlign: 'center', lineHeight: 1.3 }}>
+                {budgetPercent >= 100 ? <>Limit<br/>Reached</> : <>Remove<br/>Aligners</>}
+              </span>
+              <div style={{ width: 36, height: 1, background: 'rgba(255,255,255,0.1)', margin: '5px 0 3px' }} />
+              <span style={{ fontSize: 9, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', opacity: 0.4 }}>
+                Hold to start
+              </span>
+            </>
           </>
         )}
       </button>

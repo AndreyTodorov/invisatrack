@@ -18,22 +18,24 @@ function localMinutesFromMidnight(utcIso: string, offsetMinutes: number): number
 }
 
 export default function DailySummary({ totalOffMinutes, removals, goalMinutes, streak, sessions = [], activeMinutes = 0 }: Props) {
+  const now = new Date()
+  const currentMinutes = now.getHours() * 60 + now.getMinutes()
+
   const maxOffMinutes = MINUTES_PER_DAY - goalMinutes
   const usedOffMinutes = totalOffMinutes + activeMinutes
   const budgetRemainingMinutes = Math.max(0, maxOffMinutes - usedOffMinutes)
   const overBudgetMinutes = Math.max(0, usedOffMinutes - maxOffMinutes)
   const budgetPct = Math.min(100, (usedOffMinutes / maxOffMinutes) * 100)
 
-  const wearMinutes = Math.max(0, MINUTES_PER_DAY - totalOffMinutes - activeMinutes)
-  const wearPct = Math.min(100, (wearMinutes / goalMinutes) * 100)
+  const wearMinutes = Math.max(0, currentMinutes - totalOffMinutes - activeMinutes)
+  // Pace: how on-track are we relative to expected wear by now?
+  const expectedWearByNow = (currentMinutes / MINUTES_PER_DAY) * goalMinutes
+  const pacePct = expectedWearByNow > 0 ? (wearMinutes / expectedWearByNow) * 100 : 100
 
-  const wearColor = wearPct >= 95 ? 'var(--green)' : wearPct >= 75 ? 'var(--amber)' : 'var(--rose)'
+  const wearColor = pacePct >= 95 ? 'var(--green)' : pacePct >= 75 ? 'var(--amber)' : 'var(--rose)'
   const budgetColor = budgetPct >= 85 ? 'var(--rose)' : budgetPct >= 60 ? 'var(--amber)' : 'var(--green)'
 
   // Build timeline segments for the 24h bar
-  const now = new Date()
-  const currentMinutes = now.getHours() * 60 + now.getMinutes()
-
   const sorted = [...sessions].sort(
     (a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime()
   )
@@ -63,7 +65,7 @@ export default function DailySummary({ totalOffMinutes, removals, goalMinutes, s
   if (cursor < 1440) segments.push({ start: cursor, end: 1440, type: 'future' })
 
   const segmentColor: Record<SegmentType, string> = {
-    wearing: wearColor,
+    wearing: 'var(--green)',
     off: 'rgba(248,113,113,0.55)',
     future: 'rgba(255,255,255,0.04)',
   }
@@ -106,12 +108,12 @@ export default function DailySummary({ totalOffMinutes, removals, goalMinutes, s
           </span>
           <span style={{
             fontSize: 10, fontWeight: 600, letterSpacing: '0.04em',
-            color: wearPct >= 95 ? 'var(--green)' : 'var(--amber)',
-            background: wearPct >= 95 ? 'rgba(74,222,128,0.08)' : 'rgba(251,191,36,0.08)',
-            border: `1px solid ${wearPct >= 95 ? 'rgba(74,222,128,0.2)' : 'rgba(251,191,36,0.2)'}`,
+            color: pacePct >= 95 ? 'var(--green)' : 'var(--amber)',
+            background: pacePct >= 95 ? 'rgba(74,222,128,0.08)' : 'rgba(251,191,36,0.08)',
+            border: `1px solid ${pacePct >= 95 ? 'rgba(74,222,128,0.2)' : 'rgba(251,191,36,0.2)'}`,
             borderRadius: 20, padding: '2px 8px',
           }}>
-            {wearPct >= 95 ? 'On track' : 'Below goal'}
+            {pacePct >= 95 ? 'On track' : 'Below goal'}
           </span>
         </div>
         <div style={{ width: '100%', height: 18, borderRadius: 9, overflow: 'hidden', position: 'relative', background: 'rgba(255,255,255,0.04)' }}>
@@ -195,7 +197,7 @@ export default function DailySummary({ totalOffMinutes, removals, goalMinutes, s
         </div>
         <div style={{ display: 'flex', gap: 14, marginTop: 4 }}>
           {([
-            { bg: wearColor,                    label: 'Wearing' },
+            { bg: 'var(--green)',                label: 'Wearing' },
             { bg: 'rgba(248,113,113,0.55)',      label: 'Off' },
             { bg: 'rgba(255,255,255,0.12)',      label: 'Rest of day' },
           ] as const).map(({ bg, label }) => (
