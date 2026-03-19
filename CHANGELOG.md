@@ -1,3 +1,20 @@
+# [1.10.0](https://github.com/AndreyTodorov/invisatrack/compare/v1.9.1...v1.10.0) (2026-03-19)
+
+
+### Bug Fixes
+
+* **calendar:** increase touch area on nav buttons for mobile ([5bbe88c](https://github.com/AndreyTodorov/invisatrack/commit/5bbe88c73d6775bb73a851e95f274fd6dd345644))
+
+
+### Features
+
+* **calendar:** replace 3-month view with single-month + prev/next navigation ([1aaa22c](https://github.com/AndreyTodorov/invisatrack/commit/1aaa22c4667bec5e01625e481b755e2d7fb3d90c))
+* **history:** add calendar heatmap, month grouping, filters, sticky headers, and wear bars ([349805f](https://github.com/AndreyTodorov/invisatrack/commit/349805f7b1d607657bd0aaac3007954c58e2e131))
+* **reports:** move wear calendar to Reports > Month tab ([9c4565c](https://github.com/AndreyTodorov/invisatrack/commit/9c4565cfb84dd1e38975e62b8106b70db8987ce9))
+* **reports:** persist selected tab to localStorage ([2930a18](https://github.com/AndreyTodorov/invisatrack/commit/2930a18a7a9cc53df2b0f68f555b3a452f67757c))
+* **ui:** add directional slide animations on tab transitions in Reports and History ([c0d5db4](https://github.com/AndreyTodorov/invisatrack/commit/c0d5db425ffd44d08d6656f227a1d1fa0c78021b))
+* **ui:** smoother tab animations + directional slide on main nav transitions ([f712867](https://github.com/AndreyTodorov/invisatrack/commit/f712867d29bfe680a8173edccbe8aef43ac79a3f))
+
 ## [1.9.1](https://github.com/AndreyTodorov/invisatrack/compare/v1.9.0...v1.9.1) (2026-03-19)
 
 
