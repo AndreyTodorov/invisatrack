@@ -1,4 +1,5 @@
-import { NavLink } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
+import { setNavDirection } from '../../navDirection'
 
 const HomeIcon = () => (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
@@ -22,14 +23,27 @@ const SettingsIcon = () => (
   </svg>
 )
 
-const tabs = [
+const NAV_TABS = [
   { to: '/', label: 'Home', Icon: HomeIcon },
   { to: '/history', label: 'History', Icon: HistoryIcon },
   { to: '/reports', label: 'Reports', Icon: ReportsIcon },
   { to: '/settings', label: 'Settings', Icon: SettingsIcon },
 ]
 
+const NAV_ORDER = NAV_TABS.map(t => t.to)
+
 export default function BottomNav() {
+  const location = useLocation()
+  const navigate = useNavigate()
+
+  const handleNav = (to: string) => {
+    if (to === location.pathname) return
+    const fromIdx = NAV_ORDER.indexOf(location.pathname)
+    const toIdx = NAV_ORDER.indexOf(to)
+    setNavDirection(toIdx > fromIdx ? 'right' : 'left')
+    navigate(to)
+  }
+
   return (
     <nav style={{
       position: 'fixed', bottom: 0, left: 0, right: 0,
@@ -40,19 +54,23 @@ export default function BottomNav() {
       display: 'flex',
       zIndex: 50,
     }}>
-      {tabs.map(({ to, label, Icon }) => (
-        <NavLink
-          key={to}
-          to={to}
-          end={to === '/'}
-          style={{ flex: 1, textDecoration: 'none' }}
-        >
-          {({ isActive }) => (
+      {NAV_TABS.map(({ to, label, Icon }) => {
+        const isActive = to === '/' ? location.pathname === '/' : location.pathname.startsWith(to)
+        return (
+          <button
+            key={to}
+            onClick={() => handleNav(to)}
+            style={{
+              flex: 1, background: 'none', border: 'none', cursor: 'pointer',
+              fontFamily: 'inherit', textDecoration: 'none',
+            }}
+          >
             <div style={{
               display: 'flex', flexDirection: 'column', alignItems: 'center',
               padding: '10px 0 14px', gap: 4,
               color: isActive ? 'var(--cyan)' : 'var(--text-faint)',
               transition: 'color 0.2s',
+              position: 'relative',
             }}>
               <Icon />
               <span style={{ fontSize: 9.5, fontWeight: isActive ? 600 : 400, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
@@ -68,9 +86,9 @@ export default function BottomNav() {
                 }} />
               )}
             </div>
-          )}
-        </NavLink>
-      ))}
+          </button>
+        )
+      })}
     </nav>
   )
 }
