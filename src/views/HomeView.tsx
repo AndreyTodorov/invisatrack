@@ -66,6 +66,7 @@ export default function HomeView() {
   const [lastSession, setLastSession] = useState<{ durationMinutes: number; budgetLeftMinutes: number } | null>(null)
   // snoozedUntil: null = not snoozed, Infinity = dismissed for session, timestamp = snoozed until that time
   const [snoozedUntil, setSnoozedUntil] = useState<number | null>(null)
+  const [autoCappedDismissed, setAutoCappedDismissed] = useState(false)
   const showAlert = reminderFired && !snoozedUntil
 
   // Redirect to onboarding if no treatment set up
@@ -83,6 +84,8 @@ export default function HomeView() {
 
   const handleStart = async () => {
     setSnoozedUntil(null)
+    setLastSession(null)
+    setAutoCappedDismissed(false)
     await start()
   }
 
@@ -178,14 +181,19 @@ export default function HomeView() {
         </div>
       )}
 
-{autoCapped && (
+      {autoCapped && !autoCappedDismissed && (
         <div style={{
           background: 'var(--amber-bg)',
           border: '1px solid rgba(252,211,77,0.2)',
           borderRadius: 14, padding: '12px 16px',
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
           fontSize: 13, color: 'var(--amber)',
         }}>
-          Session was automatically ended after {autoCapMins} minutes.
+          <span>Session was automatically ended after {autoCapMins} minutes.</span>
+          <button
+            onClick={() => setAutoCappedDismissed(true)}
+            style={{ background: 'none', border: 'none', color: 'var(--amber)', fontSize: 18, cursor: 'pointer', padding: '0 4px', fontFamily: 'inherit', opacity: 0.7 }}
+          >×</button>
         </div>
       )}
 
