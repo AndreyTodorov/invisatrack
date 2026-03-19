@@ -65,7 +65,7 @@ export default function DailySummary({ totalOffMinutes, removals, goalMinutes, s
   if (cursor < 1440) segments.push({ start: cursor, end: 1440, type: 'future' })
 
   const segmentColor: Record<SegmentType, string> = {
-    wearing: wearColor,
+    wearing: 'var(--green)',
     off: 'rgba(248,113,113,0.55)',
     future: 'rgba(255,255,255,0.04)',
   }
@@ -197,7 +197,7 @@ export default function DailySummary({ totalOffMinutes, removals, goalMinutes, s
         </div>
         <div style={{ display: 'flex', gap: 14, marginTop: 4 }}>
           {([
-            { bg: wearColor,                    label: 'Wearing' },
+            { bg: 'var(--green)',                label: 'Wearing' },
             { bg: 'rgba(248,113,113,0.55)',      label: 'Off' },
             { bg: 'rgba(255,255,255,0.12)',      label: 'Rest of day' },
           ] as const).map(({ bg, label }) => (
