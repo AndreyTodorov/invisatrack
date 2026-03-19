@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState } from 'react'
 import type { DailyStats } from '../../types'
 
 interface Props {
@@ -10,19 +10,26 @@ interface Props {
 
 const WEEKDAYS = ['M', 'T', 'W', 'T', 'F', 'S', 'S']
 
+function monthOffset(today: string, offset: number): { year: number; month: number } {
+  const [y, m] = today.split('-').map(Number)
+  let month = m + offset
+  let year = y
+  while (month <= 0) { month += 12; year -= 1 }
+  while (month > 12) { month -= 12; year += 1 }
+  return { year, month }
+}
+
 export default function CalendarHeatmap({ dateStatsMap, sessionDates, goalMinutes, today }: Props) {
   const [expanded, setExpanded] = useState(true)
+  const [offset, setOffset] = useState(0) // 0 = current month, -1 = prev, etc.
   const goalPct = (goalMinutes / 1440) * 100
 
-  const months = useMemo(() => {
-    const [y, m] = today.split('-').map(Number)
-    return [-2, -1, 0].map(offset => {
-      let month = m + offset
-      let year = y
-      if (month <= 0) { month += 12; year -= 1 }
-      return { year, month } // month is 1-indexed
-    })
-  }, [today])
+  const { year, month } = monthOffset(today, offset)
+  const label = new Date(year, month - 1, 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+  const daysInMonth = new Date(year, month, 0).getDate()
+  const firstDow = (new Date(year, month - 1, 1).getDay() + 6) % 7 // Mon-first offset
+
+  const isCurrentMonth = offset === 0
 
   function cellStyle(date: string): { background: string; opacity: number } {
     if (date > today) return { background: 'var(--surface-3)', opacity: 0.3 }
@@ -54,44 +61,61 @@ export default function CalendarHeatmap({ dateStatsMap, sessionDates, goalMinute
         <div style={{
           background: 'var(--surface)', border: '1px solid var(--border)',
           borderRadius: 16, padding: '14px 16px',
-          display: 'flex', flexDirection: 'column', gap: 16,
+          display: 'flex', flexDirection: 'column', gap: 14,
         }}>
-          {months.map(({ year, month }) => {
-            const label = new Date(year, month - 1, 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
-            const daysInMonth = new Date(year, month, 0).getDate()
-            const offset = (new Date(year, month - 1, 1).getDay() + 6) % 7 // Mon-first offset
+          {/* Month navigation */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <button
+              onClick={() => setOffset(o => o - 1)}
+              style={{
+                background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit',
+                fontSize: 18, color: 'var(--text-muted)', padding: '0 4px', lineHeight: 1,
+              }}
+            >
+              ‹
+            </button>
+            <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{label}</span>
+            <button
+              onClick={() => setOffset(o => o + 1)}
+              disabled={isCurrentMonth}
+              style={{
+                background: 'none', border: 'none', cursor: isCurrentMonth ? 'default' : 'pointer',
+                fontFamily: 'inherit', fontSize: 18,
+                color: isCurrentMonth ? 'var(--surface-3)' : 'var(--text-muted)',
+                padding: '0 4px', lineHeight: 1,
+              }}
+            >
+              ›
+            </button>
+          </div>
 
-            return (
-              <div key={`${year}-${month}`}>
-                <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 500, marginBottom: 8 }}>{label}</div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 3 }}>
-                  {WEEKDAYS.map((l, i) => (
-                    <div key={i} style={{ fontSize: 9, color: 'var(--text-faint)', textAlign: 'center', marginBottom: 3 }}>{l}</div>
-                  ))}
-                  {Array.from({ length: offset }, (_, i) => <div key={`e${i}`} />)}
-                  {Array.from({ length: daysInMonth }, (_, i) => {
-                    const d = i + 1
-                    const date = `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`
-                    const isToday = date === today
-                    const { background, opacity } = cellStyle(date)
-                    return (
-                      <div
-                        key={date}
-                        title={date}
-                        style={{
-                          aspectRatio: '1', borderRadius: 4,
-                          background, opacity,
-                          outline: isToday ? '2px solid var(--cyan)' : 'none',
-                          outlineOffset: '1px',
-                        }}
-                      />
-                    )
-                  })}
-                </div>
-              </div>
-            )
-          })}
+          {/* Day grid */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 4 }}>
+            {WEEKDAYS.map((l, i) => (
+              <div key={i} style={{ fontSize: 9, color: 'var(--text-faint)', textAlign: 'center', marginBottom: 2 }}>{l}</div>
+            ))}
+            {Array.from({ length: firstDow }, (_, i) => <div key={`e${i}`} />)}
+            {Array.from({ length: daysInMonth }, (_, i) => {
+              const d = i + 1
+              const date = `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`
+              const isToday = date === today
+              const { background, opacity } = cellStyle(date)
+              return (
+                <div
+                  key={date}
+                  title={date}
+                  style={{
+                    aspectRatio: '1', borderRadius: 4,
+                    background, opacity,
+                    outline: isToday ? '2px solid var(--cyan)' : 'none',
+                    outlineOffset: '1px',
+                  }}
+                />
+              )
+            })}
+          </div>
 
+          {/* Legend */}
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
             {[
               { color: 'var(--green)', label: 'Compliant' },
