@@ -10,9 +10,12 @@ export function validateSession(
   otherSessions: SessionLike[],
   excludeId?: string
 ): void {
+  const now = Date.now()
   const start = new Date(startTime).getTime()
   const end = new Date(endTime).getTime()
 
+  if (start > now) throw new Error('Start time cannot be in the future.')
+  if (end > now) throw new Error('End time cannot be in the future.')
   if (end <= start) throw new Error('End time must be after start time.')
 
   const durationMs = end - start
