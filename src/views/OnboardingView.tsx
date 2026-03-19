@@ -28,6 +28,7 @@ export default function OnboardingView() {
   const [currentSet, setCurrentSet] = useState('1')
   const [totalSets, setTotalSets] = useState('')
   const [goalHours, setGoalHours] = useState(22)
+  const [goalMins, setGoalMins] = useState(0)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -45,7 +46,7 @@ export default function OnboardingView() {
         displayName: user.displayName ?? '',
         email: user.email ?? '',
         timezone: 'auto',
-        dailyWearGoalMinutes: Math.round(goalHours * 60),
+        dailyWearGoalMinutes: goalHours * 60 + goalMins,
         reminderThresholdMinutes: DEFAULT_REMINDER_THRESHOLD_MINUTES,
         autoCapMinutes: DEFAULT_AUTO_CAP_MINUTES,
         createdAt: nowISO(),
@@ -133,11 +134,24 @@ export default function OnboardingView() {
           </div>
 
           <div>
-            <label style={labelStyle}>Daily wear goal (hours)</label>
-            <input
-              type="number" min="1" max="24" step="0.5" value={goalHours}
-              onChange={e => setGoalHours(parseFloat(e.target.value))}
-            />
+            <label style={labelStyle}>Daily wear goal</label>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <div style={{ flex: 1 }}>
+                <input
+                  type="number" min="0" max="23" value={goalHours} style={{ width: '100%' }}
+                  onChange={e => setGoalHours(Math.max(0, Math.min(23, parseInt(e.target.value) || 0)))}
+                />
+                <p style={{ fontSize: 11, color: 'var(--text-faint)', margin: '4px 0 0', textAlign: 'center' }}>hours</p>
+              </div>
+              <span style={{ color: 'var(--text-muted)', fontSize: 18, fontWeight: 300, paddingBottom: 18 }}>:</span>
+              <div style={{ flex: 1 }}>
+                <input
+                  type="number" min="0" max="59" step="5" value={goalMins} style={{ width: '100%' }}
+                  onChange={e => setGoalMins(Math.max(0, Math.min(59, parseInt(e.target.value) || 0)))}
+                />
+                <p style={{ fontSize: 11, color: 'var(--text-faint)', margin: '4px 0 0', textAlign: 'center' }}>minutes</p>
+              </div>
+            </div>
             <p style={hintStyle}>Most orthodontists recommend 20–22 hours.</p>
           </div>
         </div>

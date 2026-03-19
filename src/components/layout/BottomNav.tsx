@@ -52,6 +52,7 @@ export default function BottomNav() {
       WebkitBackdropFilter: 'blur(24px)',
       borderTop: '1px solid var(--border)',
       display: 'flex',
+      paddingBottom: 'env(safe-area-inset-bottom)',
       zIndex: 50,
     }}>
       {NAV_TABS.map(({ to, label, Icon }) => {
@@ -72,19 +73,19 @@ export default function BottomNav() {
               transition: 'color 0.2s',
               position: 'relative',
             }}>
-              <Icon />
-              <span style={{ fontSize: 9.5, fontWeight: isActive ? 600 : 400, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
-                {label}
-              </span>
               {isActive && (
                 <span style={{
-                  position: 'absolute', bottom: 0,
+                  position: 'absolute', top: 0,
                   width: 24, height: 2,
                   background: 'var(--cyan)',
                   borderRadius: 1,
                   boxShadow: '0 0 8px var(--cyan-glow)',
                 }} />
               )}
+              <Icon />
+              <span style={{ fontSize: 9.5, fontWeight: isActive ? 600 : 400, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+                {label}
+              </span>
             </div>
           </button>
         )
