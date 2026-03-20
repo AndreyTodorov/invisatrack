@@ -1,8 +1,14 @@
 import { useEffect } from 'react'
+import { onValue, seedVersionRef } from '../services/firebase'
+import { useAuthContext } from '../contexts/AuthContext'
+import { localDB } from '../services/db'
 
 const isDev = import.meta.env.VITE_USE_EMULATOR === 'true'
+const SEED_VERSION_KEY = 'lastSeedVersion'
 
 export default function DevBanner() {
+  const { user } = useAuthContext()
+
   useEffect(() => {
     if (!isDev) return
     const original = document.title
@@ -11,6 +17,22 @@ export default function DevBanner() {
     }
     return () => { document.title = original }
   }, [])
+
+  useEffect(() => {
+    if (!isDev || !user) return
+    return onValue(seedVersionRef(user.uid), async snap => {
+      const version = snap.val() as number | null
+      if (!version) return
+      const last = localStorage.getItem(SEED_VERSION_KEY)
+      if (last === String(version)) return
+      localStorage.setItem(SEED_VERSION_KEY, String(version))
+      await localDB.sessions.clear()
+      await localDB.sets.clear()
+      await localDB.profile.clear()
+      await localDB.treatment.clear()
+      window.location.reload()
+    })
+  }, [user])
 
   if (!isDev) return null
 

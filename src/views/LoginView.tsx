@@ -1,4 +1,7 @@
 import { useAuthContext } from '../contexts/AuthContext'
+import { signInWithEmail } from '../services/firebase'
+
+const isDev = import.meta.env.VITE_USE_EMULATOR === 'true'
 
 export default function LoginView() {
   const { signIn } = useAuthContext()
@@ -52,6 +55,27 @@ export default function LoginView() {
         </svg>
         Sign in with Google
       </button>
+
+      {isDev && (
+        <button
+          onClick={async () => {
+            const { localDB } = await import('../services/db')
+            await localDB.sessions.clear()
+            await localDB.sets.clear()
+            await localDB.profile.clear()
+            await localDB.treatment.clear()
+            await signInWithEmail('seed@test.com', 'password123')
+          }}
+          style={{
+            background: 'none', border: '1px dashed var(--border)',
+            borderRadius: 14, padding: '10px 20px',
+            fontSize: 13, color: 'var(--text-muted)',
+            fontFamily: 'inherit', cursor: 'pointer',
+          }}
+        >
+          [dev] Sign in as seed user
+        </button>
+      )}
     </div>
   )
 }

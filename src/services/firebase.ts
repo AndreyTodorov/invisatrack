@@ -1,6 +1,7 @@
 import { initializeApp } from 'firebase/app'
 import {
-  getAuth, GoogleAuthProvider, signInWithPopup, signOut, connectAuthEmulator,
+  getAuth, GoogleAuthProvider, signInWithPopup, signOut, signInWithEmailAndPassword,
+  connectAuthEmulator,
 } from 'firebase/auth'
 import {
   getDatabase, ref, set, update, remove, get, onValue, push, connectDatabaseEmulator,
@@ -27,6 +28,8 @@ if (import.meta.env.VITE_USE_EMULATOR === 'true') {
 
 export const signInWithGoogle = () => signInWithPopup(auth, googleProvider)
 export const signOutUser = () => signOut(auth)
+export const signInWithEmail = (email: string, password: string) =>
+  signInWithEmailAndPassword(auth, email, password)
 
 export const userRef = (uid: string) => ref(db, `users/${uid}`)
 export const profileRef = (uid: string) => ref(db, `users/${uid}/profile`)
@@ -35,5 +38,6 @@ export const sessionsRef = (uid: string) => ref(db, `users/${uid}/sessions`)
 export const sessionRef = (uid: string, id: string) => ref(db, `users/${uid}/sessions/${id}`)
 export const setsRef = (uid: string) => ref(db, `users/${uid}/sets`)
 export const setRef = (uid: string, id: string) => ref(db, `users/${uid}/sets/${id}`)
+export const seedVersionRef = (uid: string) => ref(db, `users/${uid}/seedVersion`)
 
 export { set, update, remove, get, onValue, push, ref }

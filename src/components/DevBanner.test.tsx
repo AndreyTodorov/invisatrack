@@ -1,6 +1,17 @@
 import { render, screen } from '@testing-library/react'
 import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest'
 
+vi.mock('../contexts/AuthContext', () => ({ useAuthContext: () => ({ user: null }) }))
+vi.mock('../services/firebase', () => ({ seedVersionRef: vi.fn(), onValue: vi.fn(() => vi.fn()) }))
+vi.mock('../services/db', () => ({
+  localDB: {
+    sessions: { clear: vi.fn() },
+    sets: { clear: vi.fn() },
+    profile: { clear: vi.fn() },
+    treatment: { clear: vi.fn() },
+  },
+}))
+
 describe('DevBanner', () => {
   const originalTitle = document.title
   let DevBanner: React.ComponentType

@@ -79,6 +79,31 @@ npm run emulators:stop
 
 Point the app at the emulators by setting `VITE_USE_EMULATOR=true` in your `.env` file.
 
+### Seeding dev data
+
+`scripts/seed.ts` populates the emulator with realistic sessions and aligner sets so you can start testing immediately without manually entering data.
+
+```bash
+npm run seed                      # minimal preset (default)
+npm run seed -- --preset history  # 5 sets, ~80 sessions, 5 weeks
+npm run seed -- --preset full     # 20 sets, ~400 sessions, 5 months
+```
+
+On first run the script creates `seed@test.com` / `password123` in the Auth emulator. Subsequent runs reuse the same user and overwrite all data.
+
+**Signing in:** the login screen shows a **[dev] Sign in as seed user** button (only visible when `VITE_USE_EMULATOR=true`). Clicking it clears local IndexedDB and signs in as the seed user in one step.
+
+**Auto-reload:** if the app is already open when you re-run the seeder, `DevBanner` detects the new `seedVersion` written to RTDB, wipes IndexedDB, and reloads the page automatically — no manual refresh needed.
+
+**Tweakable constants** at the top of `scripts/seed.ts`:
+
+```ts
+const MIN_REMOVALS_PER_DAY = 2;
+const MAX_REMOVALS_PER_DAY = 4;
+const MIN_SESSION_MINUTES  = 15;
+const MAX_SESSION_MINUTES  = 45;
+```
+
 ---
 
 ## Environment Variables
@@ -101,6 +126,9 @@ All variables are injected by Vite at build time via `import.meta.env`. They are
 ## Project Structure
 
 ```
+scripts/
+└── seed.ts                       # Dev data seeder (sessions + sets → emulator)
+
 src/
 ├── App.tsx                       # Route definitions, auth guard
 ├── main.tsx                      # Entry point — HashRouter + context providers
@@ -136,6 +164,7 @@ src/
 │   └── deviceId.ts               # Stable device identifier (localStorage)
 │
 ├── components/
+│   ├── DevBanner.tsx             # Dev-mode banner; watches seedVersion → auto-reload on reseed
 │   ├── layout/
 │   │   ├── AppShell.tsx          # Content wrapper + bottom nav
 │   │   └── BottomNav.tsx         # Four-tab navigation bar
@@ -168,7 +197,7 @@ src/
     ├── ReportsView.tsx           # Analytics dashboard (tabs: 7d / week / month / by set)
     ├── SettingsView.tsx          # Nav-list settings with push/pop sub-screens
     ├── OnboardingView.tsx        # First-run setup (set number, total sets, goal)
-    └── LoginView.tsx             # Google sign-in page (shown when not authenticated)
+    └── LoginView.tsx             # Google sign-in; dev-only "Sign in as seed user" button
 ```
 
 ---
