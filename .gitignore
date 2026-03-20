@@ -54,5 +54,8 @@ lighthouse-*.html
 # Claude Code
 .claude/
 
+# Superpowers brainstorm/visual companion runtime data
+.superpowers/
+
 # Git worktrees
 .worktrees/
