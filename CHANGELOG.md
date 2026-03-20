@@ -1,3 +1,18 @@
+# [1.17.0](https://github.com/AndreyTodorov/invisatrack/compare/v1.16.0...v1.17.0) (2026-03-20)
+
+
+### Bug Fixes
+
+* constrain bottom sheet modals to viewport height on mobile ([efaf128](https://github.com/AndreyTodorov/invisatrack/commit/efaf128353d9e83517605bf8ef72523dd911283f))
+* session edit timezone round-trip, close animation, delete button hit target ([f88fba4](https://github.com/AndreyTodorov/invisatrack/commit/f88fba41f621737d5c7bd668dbaefad15bc6fbd1))
+
+
+### Features
+
+* add period navigation (offset state, NavRow, getDateRange update) ([5cf9e25](https://github.com/AndreyTodorov/invisatrack/commit/5cf9e25ac51aa215bb811edac8df4255494b6184))
+* pass periodLabel as prop to WearChart, update empty-state message ([c92f362](https://github.com/AndreyTodorov/invisatrack/commit/c92f3620097b302246999878ab4d40cebac4e426))
+* **reports:** period navigation, heatmap sync, and calendar date labels ([d6a8e66](https://github.com/AndreyTodorov/invisatrack/commit/d6a8e66e761bc0c02e4b80c30dffbd4865940453))
+
 # [1.16.0](https://github.com/AndreyTodorov/invisatrack/compare/v1.15.0...v1.16.0) (2026-03-20)
 
 
