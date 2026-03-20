@@ -1,3 +1,10 @@
+## [1.17.2](https://github.com/AndreyTodorov/invisatrack/compare/v1.17.1...v1.17.2) (2026-03-20)
+
+
+### Bug Fixes
+
+* prevent date input overflow and tab swipe bleed-through in modals ([6459e8a](https://github.com/AndreyTodorov/invisatrack/commit/6459e8aa7ff7f42ff34732227fb3c18f7c6f01bf))
+
 ## [1.17.1](https://github.com/AndreyTodorov/invisatrack/compare/v1.17.0...v1.17.1) (2026-03-20)
 
 
