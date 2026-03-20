@@ -8,6 +8,13 @@ function toDatetimeLocal(utcIso: string, offsetMinutes: number): string {
   return local.toISOString().slice(0, 16)
 }
 
+// Inverse of toDatetimeLocal: converts a datetime-local string back to UTC ISO
+// using the stored offset, not the current device timezone.
+// Appends 'Z' to treat the string as UTC before subtracting the offset.
+function fromDatetimeLocal(localStr: string, offsetMinutes: number): string {
+  return new Date(new Date(localStr + ':00.000Z').getTime() - offsetMinutes * 60_000).toISOString()
+}
+
 interface Props {
   session: Session
   onClose: () => void
@@ -39,6 +46,8 @@ export default function SessionEditModal({ session, onClose }: Props) {
   const [error, setError] = useState<string | null>(null)
   // FIX SF-2: in-UI confirmation instead of window.confirm()
   const [confirmingDelete, setConfirmingDelete] = useState(false)
+  const [closing, setClosing] = useState(false)
+  const handleClose = () => setClosing(true)
 
   const initialStartTime = toDatetimeLocal(session.startTime, session.startTimezoneOffset)
   const initialEndTime = session.endTime
@@ -49,10 +58,15 @@ export default function SessionEditModal({ session, onClose }: Props) {
   const handleSave = async () => {
     if (!hasChanges) return
     try {
-      await updateSession(session.id, {
-        startTime: new Date(startTime).toISOString(),
-        endTime: endTime ? new Date(endTime).toISOString() : undefined,
-      })
+      const updates: Partial<Pick<Session, 'startTime' | 'endTime'>> = {
+        startTime: startTime !== initialStartTime
+          ? fromDatetimeLocal(startTime, session.startTimezoneOffset)
+          : session.startTime,
+      }
+      if (endTime !== initialEndTime && endTime) {
+        updates.endTime = fromDatetimeLocal(endTime, session.endTimezoneOffset ?? session.startTimezoneOffset)
+      }
+      await updateSession(session.id, updates)
       onClose()
     } catch (e: unknown) {
       setError((e as Error).message)
@@ -66,7 +80,7 @@ export default function SessionEditModal({ session, onClose }: Props) {
 
   return (
     <div
-      onClick={onClose}
+      onClick={handleClose}
       style={{
         position: 'fixed', inset: 0,
         background: 'rgba(0,0,0,0.7)',
@@ -77,8 +91,9 @@ export default function SessionEditModal({ session, onClose }: Props) {
       }}
     >
       <div
-        className="animate-slide-up"
+        className={closing ? 'animate-slide-down' : 'animate-slide-up'}
         onClick={e => e.stopPropagation()}
+        onAnimationEnd={() => { if (closing) onClose() }}
         style={{
           background: 'var(--surface)',
           borderTop: '1px solid var(--border-strong)',
@@ -136,7 +151,7 @@ export default function SessionEditModal({ session, onClose }: Props) {
           <>
             <div style={{ display: 'flex', gap: 10 }}>
               <button
-                onClick={onClose}
+                onClick={handleClose}
                 disabled={!hasChanges}
                 style={{
                   ...btnBase, flex: 1,
@@ -166,8 +181,9 @@ export default function SessionEditModal({ session, onClose }: Props) {
             <button
               onClick={() => setConfirmingDelete(true)}
               style={{
-                width: '100%', border: 'none', background: 'transparent',
-                padding: '6px 0', fontSize: 13, fontWeight: 500,
+                display: 'block', width: 'fit-content', margin: '0 auto',
+                border: 'none', background: 'transparent',
+                padding: '6px 12px', fontSize: 13, fontWeight: 500,
                 fontFamily: 'inherit', cursor: 'pointer', color: 'var(--text-faint)',
               }}
             >

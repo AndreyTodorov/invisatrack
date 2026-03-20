@@ -44,6 +44,8 @@ export default function SetEditModal({ set, stats, isCurrent, prevSet, nextSet, 
   type ModalView = 'edit' | 'confirmDelete' | 'pickCurrent'
   const [view, setView] = useState<ModalView>('edit')
   const [deleting, setDeleting] = useState(false)
+  const [closing, setClosing] = useState(false)
+  const handleClose = () => setClosing(true)
 
   const setNumberVal = parseInt(setNumber)
   const setNumberError =
@@ -160,7 +162,7 @@ export default function SetEditModal({ set, stats, isCurrent, prevSet, nextSet, 
 
   return (
     <div
-      onClick={onClose}
+      onClick={handleClose}
       style={{
         position: 'fixed', inset: 0,
         background: 'rgba(0,0,0,0.7)',
@@ -171,8 +173,9 @@ export default function SetEditModal({ set, stats, isCurrent, prevSet, nextSet, 
       }}
     >
       <div
-        className="animate-slide-up"
+        className={closing ? 'animate-slide-down' : 'animate-slide-up'}
         onClick={e => e.stopPropagation()}
+        onAnimationEnd={() => { if (closing) onClose() }}
         style={{
           background: 'var(--surface)',
           borderTop: '1px solid var(--border-strong)',
@@ -296,7 +299,7 @@ export default function SetEditModal({ set, stats, isCurrent, prevSet, nextSet, 
           <>
             <div style={{ display: 'flex', gap: 10 }}>
               <button
-                onClick={onClose}
+                onClick={handleClose}
                 disabled={!hasChanges}
                 style={{
                   ...btnBase, flex: 1,
@@ -326,8 +329,9 @@ export default function SetEditModal({ set, stats, isCurrent, prevSet, nextSet, 
             <button
               onClick={() => setView('confirmDelete')}
               style={{
-                width: '100%', border: 'none', background: 'transparent',
-                padding: '6px 0', fontSize: 13, fontWeight: 500,
+                display: 'block', width: 'fit-content', margin: '0 auto',
+                border: 'none', background: 'transparent',
+                padding: '6px 12px', fontSize: 13, fontWeight: 500,
                 fontFamily: 'inherit', cursor: 'pointer', color: 'var(--text-faint)',
               }}
             >
@@ -401,7 +405,7 @@ export default function SetEditModal({ set, stats, isCurrent, prevSet, nextSet, 
                 ))}
             </div>
             <button
-              onClick={onClose}
+              onClick={handleClose}
               style={{
                 width: '100%', border: 'none', background: 'transparent',
                 padding: '6px 0', fontSize: 13, fontWeight: 500,

@@ -98,12 +98,21 @@ input[type="number"]::-webkit-inner-spin-button {
   to { transform: translateY(0); }
 }
 
+@keyframes slide-down {
+  from { transform: translateY(0); }
+  to { transform: translateY(100%); }
+}
+
 .animate-fade-in {
   animation: fade-in 0.3s ease forwards;
 }
 
 .animate-slide-up {
   animation: slide-up 0.35s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+}
+
+.animate-slide-down {
+  animation: slide-down 0.2s cubic-bezier(0.4, 0, 1, 1) forwards;
 }
 
 @keyframes tab-enter-from-right {
