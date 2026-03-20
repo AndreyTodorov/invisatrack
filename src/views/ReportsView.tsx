@@ -178,6 +178,8 @@ function NavRow({
   )
 }
 
+const PERIOD_ORDER: Period[] = ['7d', 'week', 'month', 'set']
+
 function getPeriodStart(period: 'week' | 'month', offset: number): string {
   const todayStr = getTodayLocal()
   const today = new Date(todayStr + 'T00:00:00')
@@ -195,7 +197,6 @@ function getPeriodStart(period: 'week' | 'month', offset: number): string {
 }
 
 export default function ReportsView() {
-  const PERIOD_ORDER: Period[] = ['7d', 'week', 'month', 'set']
   const [period, setPeriod] = useState<Period>(
     () => (localStorage.getItem('reports-period') as Period | null) ?? '7d'
   )
@@ -232,43 +233,35 @@ export default function ReportsView() {
   const isPrevDisabled = (() => {
     if (!navPeriod || !firstSessionDate) return true
     const currentStart = getPeriodStart(navPeriod, offset)
-    const firstStart = getPeriodStart(navPeriod,
-      navPeriod === 'week'
-        ? (() => {
-            const todayStr = getTodayLocal()
-            const today = new Date(todayStr + 'T00:00:00')
-            const day = today.getDay()
-            const currentMonday = new Date(today)
-            currentMonday.setDate(today.getDate() - ((day + 6) % 7))
-            const firstDate = new Date(firstSessionDate + 'T00:00:00')
-            const diffDays = Math.floor((currentMonday.getTime() - firstDate.getTime()) / 86400000)
-            return Math.max(0, Math.floor(diffDays / 7))
-          })()
-        : (() => {
-            const todayStr = getTodayLocal()
-            const today = new Date(todayStr + 'T00:00:00')
-            const first = new Date(firstSessionDate + 'T00:00:00')
-            return (today.getFullYear() - first.getFullYear()) * 12 + (today.getMonth() - first.getMonth())
-          })()
-    )
-    return currentStart <= firstStart
+    let firstPeriodStart: string
+    if (navPeriod === 'week') {
+      const d = new Date(firstSessionDate + 'T00:00:00')
+      const day = d.getDay()
+      const monday = new Date(d)
+      monday.setDate(d.getDate() - ((day + 6) % 7))
+      firstPeriodStart = monday.toLocaleDateString('sv')
+    } else {
+      firstPeriodStart = firstSessionDate.slice(0, 7) + '-01'
+    }
+    return currentStart <= firstPeriodStart
   })()
 
   const isNextDisabled = offset === 0
 
   const periodLabel = (() => {
     if (period === 'week') {
-      const dates = getDateRange('week', offset)
-      const start = new Date(dates[0] + 'T12:00:00')
-      const end = new Date(dates[6] + 'T12:00:00')
+      const startStr = getPeriodStart('week', offset)
+      const start = new Date(startStr + 'T12:00:00')
+      const end = new Date(start)
+      end.setDate(start.getDate() + 6)
       const todayYear = new Date().getFullYear()
       const startYear = start.getFullYear()
       const fmt = (d: Date) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
       const yearSuffix = startYear !== todayYear ? `, ${startYear}` : ''
       return `${fmt(start)}–${fmt(end).replace(/\w+ /, '')}${yearSuffix}`
     } else if (period === 'month') {
-      const dates = getDateRange('month', offset)
-      const d = new Date(dates[0] + 'T12:00:00')
+      const startStr = getPeriodStart('month', offset)
+      const d = new Date(startStr + 'T12:00:00')
       return d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
     }
     return period === '7d' ? 'last 7 days' : ''
