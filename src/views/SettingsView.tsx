@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useAuthContext } from '../contexts/AuthContext'
 import { useDataContext } from '../contexts/DataContext'
 import { useSets } from '../hooks/useSets'
@@ -14,22 +14,123 @@ import {
 
 type SaveState = 'idle' | 'saving' | 'saved' | 'error'
 
-const sectionStyle: React.CSSProperties = {
-  background: 'var(--surface)',
-  border: '1px solid var(--border)',
-  borderRadius: 18, padding: '18px 18px',
-  display: 'flex', flexDirection: 'column', gap: 16,
+function ProfileCard({ user, onSignOut }: { user: import('firebase/auth').User; onSignOut: () => void }) {
+  const [confirming, setConfirming] = useState(false)
+
+  return (
+    <div style={{
+      background: 'var(--surface)', border: '1px solid var(--border)',
+      borderRadius: 18, padding: '16px 18px',
+      display: 'flex', alignItems: 'center', gap: 14,
+    }}>
+      {user.photoURL
+        ? <img src={user.photoURL} alt="" style={{
+            width: 48, height: 48, borderRadius: '50%', objectFit: 'cover', flexShrink: 0,
+            border: '2px solid var(--border-strong)',
+          }} />
+        : <div style={{
+            width: 48, height: 48, borderRadius: '50%', flexShrink: 0,
+            background: 'var(--surface-3)', border: '2px solid var(--border-strong)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 18, fontWeight: 700, color: 'var(--cyan)',
+          }}>
+            {(user.displayName ?? user.email ?? '?')[0].toUpperCase()}
+          </div>
+      }
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {user.displayName ?? 'User'}
+        </div>
+        <div style={{ fontSize: 12, color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {user.email}
+        </div>
+      </div>
+
+      {confirming
+        ? <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flexShrink: 0 }}>
+            <button
+              onClick={onSignOut}
+              style={{
+                background: 'var(--rose-bg)', color: 'var(--rose)',
+                border: '1px solid rgba(248,113,113,0.25)', borderRadius: 8,
+                padding: '6px 12px', fontSize: 12, fontWeight: 600,
+                fontFamily: 'inherit', cursor: 'pointer', whiteSpace: 'nowrap',
+              }}
+            >
+              Sign out
+            </button>
+            <button
+              onClick={() => setConfirming(false)}
+              style={{
+                background: 'var(--surface-3)', color: 'var(--text-muted)',
+                border: '1px solid var(--border)', borderRadius: 8,
+                padding: '6px 12px', fontSize: 12, fontWeight: 600,
+                fontFamily: 'inherit', cursor: 'pointer',
+              }}
+            >
+              Cancel
+            </button>
+          </div>
+        : <button
+            onClick={() => setConfirming(true)}
+            style={{
+              flexShrink: 0, background: 'none', color: 'var(--rose)',
+              border: '1px solid rgba(248,113,113,0.2)', borderRadius: 8,
+              padding: '6px 12px', fontSize: 12, fontWeight: 500,
+              fontFamily: 'inherit', cursor: 'pointer', whiteSpace: 'nowrap',
+            }}
+          >
+            Sign out
+          </button>
+      }
+    </div>
+  )
 }
 
-const labelStyle: React.CSSProperties = {
-  display: 'block', fontSize: 11, fontWeight: 500,
-  color: 'var(--text-muted)', letterSpacing: '0.06em',
-  textTransform: 'uppercase', marginBottom: 6,
-}
+type Section = 'wear' | 'treatment' | 'data'
 
-const sectionTitleStyle: React.CSSProperties = {
-  fontSize: 13, fontWeight: 600, color: 'var(--text-muted)',
-  letterSpacing: '0.06em', textTransform: 'uppercase',
+const rowCard: React.CSSProperties = {
+  background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 18, padding: '4px 0',
+}
+const rowDivider = <div style={{ height: 1, background: 'var(--border)', margin: '0 18px' }} />
+const rowStyle: React.CSSProperties = {
+  display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '11px 18px', gap: 12,
+}
+const rowLabel: React.CSSProperties = { fontSize: 14, color: 'var(--text-muted)', flex: 1 }
+const compactInput: React.CSSProperties = {
+  width: 56, background: 'var(--surface-3)', border: '1px solid var(--border-strong)',
+  borderRadius: 8, color: 'var(--text)', fontFamily: 'inherit', fontSize: 14, fontWeight: 600,
+  padding: '6px 8px', textAlign: 'center', outline: 'none',
+}
+const unit: React.CSSProperties = { fontSize: 12, color: 'var(--text-muted)' }
+
+function NavRow({ icon, iconBg, title, summary, onClick }: {
+  icon: React.ReactNode; iconBg: string; title: string; summary: string; onClick: () => void
+}) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px',
+        background: 'none', border: 'none', width: '100%', cursor: 'pointer',
+        fontFamily: 'inherit', textAlign: 'left',
+      }}
+    >
+      <div style={{
+        width: 34, height: 34, borderRadius: 9, background: iconBg, flexShrink: 0,
+        display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16,
+      }}>
+        {icon}
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 14, fontWeight: 500, color: 'var(--text)' }}>{title}</div>
+        <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{summary}</div>
+      </div>
+      <svg width="7" height="12" viewBox="0 0 7 12" fill="none" style={{ flexShrink: 0, color: 'var(--text-faint)' }}>
+        <path d="M1 1l5 5-5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+      </svg>
+    </button>
+  )
 }
 
 
@@ -98,6 +199,8 @@ export default function SettingsPageView() {
   const { user, signOut } = useAuthContext()
   const { profile, treatment, sets } = useDataContext()
   const { updateTreatment, updateSet } = useSets()
+
+  const [activeSection, setActiveSection] = useState<Section | null>(null)
 
   // Goal split into hours + minutes
   const [goalHours, setGoalHours] = useState(Math.floor(DEFAULT_DAILY_WEAR_GOAL_MINUTES / 60))
@@ -252,60 +355,152 @@ export default function SettingsPageView() {
     }
   }
 
+  // Swipe-right-to-go-back (edge swipe, like iOS)
+  const touchStartX = useRef<number>(0)
+  const touchStartY = useRef<number>(0)
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX
+    touchStartY.current = e.touches[0].clientY
+  }
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    const dx = e.changedTouches[0].clientX - touchStartX.current
+    const dy = Math.abs(e.changedTouches[0].clientY - touchStartY.current)
+    if (touchStartX.current < 40 && dx > 60 && dx > dy) setActiveSection(null)
+  }
+
+  // Summaries shown in nav list rows
+  const wearSummary = `${goalHours}h ${goalMins}m · ${reminderMins}min reminder`
+  const treatmentSummary = treatment
+    ? `Set ${treatment.currentSetNumber}${treatment.totalSets ? ` of ${treatment.totalSets}` : ''} · ${defaultDuration}d cycles`
+    : 'Not configured'
+
+  const currentSet = treatment ? sets.find(s => s.setNumber === treatment.currentSetNumber) : undefined
+  const currentDur = currentSet?.endDate
+    ? dateDiffDays(currentSet.startDate, currentSet.endDate)
+    : treatment?.defaultSetDurationDays ?? 0
+  const overrideDirty = setDurationOverride !== setDurationOverrideInit
+  const overrideError: string | null = setDurationOverride !== ''
+    ? parseInt(setDurationOverride) < 1 ? 'Minimum 1 day'
+    : parseInt(setDurationOverride) > 90 ? 'Maximum 90 days'
+    : null
+    : null
+
+  const back = (
+    <button
+      onClick={() => setActiveSection(null)}
+      style={{
+        display: 'flex', alignItems: 'center', gap: 6,
+        background: 'none', border: 'none', color: 'var(--cyan)',
+        fontFamily: 'inherit', fontSize: 16, fontWeight: 600,
+        cursor: 'pointer', padding: 'max(env(safe-area-inset-top), 28px) 0 8px',
+        minHeight: 44,
+      }}
+    >
+      <svg width="9" height="15" viewBox="0 0 7 12" fill="none">
+        <path d="M6 1L1 6l5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+      </svg>
+      Settings
+    </button>
+  )
+
   return (
-    <div style={{ padding: '0 16px 32px', maxWidth: 440, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 20 }}>
-        <h1 style={{ fontSize: 20, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.01em' }}>Settings</h1>
-      </div>
+    <div
+      style={{ padding: '0 16px 32px', maxWidth: 440, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 12 }}
+      onTouchStart={activeSection ? handleTouchStart : undefined}
+      onTouchEnd={activeSection ? handleTouchEnd : undefined}
+    >
 
-      {/* Wear goal */}
-      <div style={sectionStyle}>
-        <span style={sectionTitleStyle}>Wear Goal</span>
+      {/* ── LIST VIEW ── */}
+      {activeSection === null && <>
+        <h1 style={{ fontSize: 20, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.01em', paddingTop: 20 }}>Settings</h1>
 
-        <div>
-          <label style={labelStyle}>Daily wear goal</label>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            <div style={{ flex: 1 }}>
+        {user && <ProfileCard user={user} onSignOut={signOut} />}
+
+        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 18, padding: '4px 0' }}>
+          <NavRow
+            icon="⏱" iconBg="rgba(34,211,238,0.12)"
+            title="Wear Goal" summary={wearSummary}
+            onClick={() => setActiveSection('wear')}
+          />
+          <div style={{ height: 1, background: 'var(--border)', margin: '0 18px' }} />
+          <NavRow
+            icon="🦷" iconBg="rgba(74,222,128,0.1)"
+            title="Treatment Plan" summary={treatmentSummary}
+            onClick={() => setActiveSection('treatment')}
+          />
+          <div style={{ height: 1, background: 'var(--border)', margin: '0 18px' }} />
+          <NavRow
+            icon="📤" iconBg="rgba(96,165,250,0.1)"
+            title="Data & Export" summary="Export your session history"
+            onClick={() => setActiveSection('data')}
+          />
+        </div>
+
+        <p style={{ textAlign: 'center', fontSize: 11, color: 'var(--text-faint)', margin: 0, paddingTop: 4 }}>
+          v{__APP_VERSION__} · {__BUILD_DATE__}
+        </p>
+      </>}
+
+      {/* ── WEAR GOAL DETAIL ── */}
+      {activeSection === 'wear' && <>
+        {back}
+        <h1 style={{ fontSize: 20, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.01em' }}>Wear Goal</h1>
+
+        <div style={rowCard}>
+          <div style={rowStyle}>
+            <span style={rowLabel}>Daily goal</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <input
                 type="number" min="0" max="23" value={goalHours}
                 onChange={e => setGoalHours(Math.max(0, Math.min(23, parseInt(e.target.value) || 0)))}
                 onBlur={() => touch('goalHours')}
-                style={{ width: '100%' }}
+                style={compactInput}
               />
-              <p style={{ fontSize: 11, color: 'var(--text-faint)', margin: '4px 0 0', textAlign: 'center' }}>hours</p>
-            </div>
-            <span style={{ color: 'var(--text-muted)', fontSize: 18, fontWeight: 300, paddingBottom: 18 }}>:</span>
-            <div style={{ flex: 1 }}>
+              <span style={unit}>h</span>
               <input
                 type="number" min="0" max="59" step="5" value={goalMins}
                 onChange={e => setGoalMins(Math.max(0, Math.min(59, parseInt(e.target.value) || 0)))}
                 onBlur={() => touch('goalMins')}
-                style={{ width: '100%' }}
+                style={compactInput}
               />
-              <p style={{ fontSize: 11, color: 'var(--text-faint)', margin: '4px 0 0', textAlign: 'center' }}>minutes</p>
+              <span style={unit}>m</span>
             </div>
           </div>
-          {(touched.goalHours || touched.goalMins) && <FieldError message={goalError} />}
-        </div>
-
-        <div>
-          <label style={labelStyle}>Reminder threshold (minutes)</label>
-          <input
-            type="number" min="5" max="120" value={reminderMins}
-            onChange={e => setReminderMins(parseInt(e.target.value) || 0)}
-            onBlur={() => touch('reminderMins')}
-          />
-          {touched.reminderMins && <FieldError message={reminderError} />}
-        </div>
-
-        <div>
-          <label style={labelStyle}>Auto-cap duration (minutes)</label>
-          <input
-            type="number" min="30" max="480" value={autoCapMins}
-            onChange={e => setAutoCapMins(parseInt(e.target.value) || 0)}
-            onBlur={() => touch('autoCapMins')}
-          />
-          {touched.autoCapMins && <FieldError message={autoCapError} />}
+          {(touched.goalHours || touched.goalMins) && (
+            <div style={{ padding: '0 18px 8px' }}><FieldError message={goalError} /></div>
+          )}
+          {rowDivider}
+          <div style={rowStyle}>
+            <span style={rowLabel}>Reminder threshold</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <input
+                type="number" min="5" max="120" value={reminderMins}
+                onChange={e => setReminderMins(parseInt(e.target.value) || 0)}
+                onBlur={() => touch('reminderMins')}
+                style={compactInput}
+              />
+              <span style={unit}>min</span>
+            </div>
+          </div>
+          {touched.reminderMins && (
+            <div style={{ padding: '0 18px 8px' }}><FieldError message={reminderError} /></div>
+          )}
+          {rowDivider}
+          <div style={rowStyle}>
+            <span style={rowLabel}>Auto-cap duration</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <input
+                type="number" min="30" max="480" value={autoCapMins}
+                onChange={e => setAutoCapMins(parseInt(e.target.value) || 0)}
+                onBlur={() => touch('autoCapMins')}
+                style={compactInput}
+              />
+              <span style={unit}>min</span>
+            </div>
+          </div>
+          {touched.autoCapMins && (
+            <div style={{ padding: '0 18px 8px' }}><FieldError message={autoCapError} /></div>
+          )}
         </div>
 
         <SaveButton
@@ -314,92 +509,96 @@ export default function SettingsPageView() {
           idleLabel="Save Preferences"
           onClick={saveProfile}
         />
-      </div>
+      </>}
 
-      {/* Treatment */}
-      <div style={sectionStyle}>
-        <span style={sectionTitleStyle}>Treatment Plan</span>
-        <div>
-          <label style={labelStyle}>Total aligner sets (leave blank if unknown)</label>
-          <input type="number" min="1" value={totalSets}
-            onChange={e => setTotalSets(e.target.value)} placeholder="e.g. 30" />
+      {/* ── TREATMENT DETAIL ── */}
+      {activeSection === 'treatment' && <>
+        {back}
+        <h1 style={{ fontSize: 20, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.01em' }}>Treatment Plan</h1>
+
+        <div style={rowCard}>
+          <div style={rowStyle}>
+            <span style={rowLabel}>Total aligner sets</span>
+            <input
+              type="number" min="1" value={totalSets}
+              onChange={e => setTotalSets(e.target.value)}
+              placeholder="e.g. 30"
+              style={{ ...compactInput, width: 72 }}
+            />
+          </div>
+          {rowDivider}
+          <div style={rowStyle}>
+            <span style={rowLabel}>Default set duration</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <input
+                type="number" min="1" max="30" value={defaultDuration}
+                onChange={e => setDefaultDuration(parseInt(e.target.value) || 1)}
+                onBlur={() => touch('defaultDuration')}
+                style={compactInput}
+              />
+              <span style={unit}>days</span>
+            </div>
+          </div>
+          {touched.defaultDuration && (
+            <div style={{ padding: '0 18px 8px' }}><FieldError message={durationError} /></div>
+          )}
         </div>
-        <div>
-          <label style={labelStyle}>Default set duration (days)</label>
-          <input
-            type="number" min="1" max="30" value={defaultDuration}
-            onChange={e => setDefaultDuration(parseInt(e.target.value) || 1)}
-            onBlur={() => touch('defaultDuration')}
-          />
-          {touched.defaultDuration && <FieldError message={durationError} />}
-        </div>
+
         <SaveButton
           state={treatmentHasErrors ? 'idle' : treatmentSaveState}
           dirty={treatmentDirty}
-          idleLabel="Save Treatment Settings"
+          idleLabel="Save Treatment"
           onClick={saveTreatment}
         />
-      </div>
 
-      {/* Current set duration override */}
-      {treatment && (() => {
-        const currentSet = sets.find(s => s.setNumber === treatment.currentSetNumber)
-        const defaultDur = treatment.defaultSetDurationDays
-        const currentDur = currentSet?.endDate ? dateDiffDays(currentSet.startDate, currentSet.endDate) : defaultDur
-        const overrideDirty = setDurationOverride !== setDurationOverrideInit
-        const overrideError: string | null = setDurationOverride !== ''
-          ? parseInt(setDurationOverride) < 1 ? 'Minimum 1 day'
-          : parseInt(setDurationOverride) > 90 ? 'Maximum 90 days'
-          : null
-          : null
-        return (
-          <div style={sectionStyle}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-              <span style={sectionTitleStyle}>Current Set</span>
-              <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Set {treatment.currentSetNumber}</span>
+        {treatment && <>
+          <h2 style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', letterSpacing: '0.06em', textTransform: 'uppercase', marginTop: 8 }}>
+            Current Set
+            <span style={{ fontSize: 12, fontWeight: 400, textTransform: 'none', letterSpacing: 0, marginLeft: 8, color: 'var(--text-muted)' }}>
+              Set {treatment.currentSetNumber}
+            </span>
+          </h2>
+
+          <div style={rowCard}>
+            <div style={rowStyle}>
+              <div>
+                <div style={rowLabel}>Duration override</div>
+                <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 2 }}>
+                  {currentSet?.endDate ? `Ends ${currentSet.endDate} · ${currentDur} days` : 'No end date set'}
+                </div>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <input
+                  type="number" min="1" max="90"
+                  value={setDurationOverride}
+                  placeholder={String(currentDur)}
+                  onChange={e => setSetDurationOverride(e.target.value)}
+                  style={compactInput}
+                />
+                <span style={unit}>days</span>
+              </div>
             </div>
-            <div>
-              <label style={labelStyle}>Duration (days)</label>
-              <input
-                type="number" min="1" max="90"
-                value={setDurationOverride}
-                placeholder={`${currentDur} days`}
-                onChange={e => setSetDurationOverride(e.target.value)}
-              />
-              <p style={{ fontSize: 11, color: 'var(--text-faint)', margin: '5px 0 0' }}>
-                {currentSet?.endDate
-                  ? `Ends ${currentSet.endDate} · ${currentDur} days`
-                  : `No end date set — enter days to set a duration.`}
-              </p>
-              {overrideError && <FieldError message={overrideError} />}
-            </div>
-            <SaveButton
-              state={overrideError ? 'idle' : setDurationSaveState}
-              dirty={overrideDirty}
-              idleLabel="Save Duration"
-              onClick={saveSetDurationOverride}
-            />
+            {overrideError && (
+              <div style={{ padding: '0 18px 8px' }}><FieldError message={overrideError} /></div>
+            )}
           </div>
-        )
-      })()}
 
-      <ExportButton />
+          <SaveButton
+            state={overrideError ? 'idle' : setDurationSaveState}
+            dirty={overrideDirty}
+            idleLabel="Save Duration"
+            onClick={saveSetDurationOverride}
+          />
+        </>}
+      </>}
 
-      <button
-        onClick={signOut}
-        style={{
-          width: '100%', background: 'transparent',
-          color: 'var(--rose)', border: '1px solid rgba(248,113,113,0.2)',
-          borderRadius: 12, padding: '13px 0', fontSize: 14, fontWeight: 600,
-          fontFamily: 'inherit', cursor: 'pointer',
-        }}
-      >
-        Sign Out
-      </button>
+      {/* ── DATA DETAIL ── */}
+      {activeSection === 'data' && <>
+        {back}
+        <h1 style={{ fontSize: 20, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.01em' }}>Data & Export</h1>
+        <ExportButton />
+      </>}
 
-      <p style={{ textAlign: 'center', fontSize: 11, color: 'var(--text-faint)', margin: 0 }}>
-        v{__APP_VERSION__} · {__BUILD_DATE__}
-      </p>
     </div>
   )
 }

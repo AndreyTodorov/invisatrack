@@ -1,5 +1,6 @@
 import { useLocation, useNavigate } from 'react-router-dom'
 import { setNavDirection } from '../../navDirection'
+import { useAuthContext } from '../../contexts/AuthContext'
 
 const HomeIcon = () => (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
@@ -35,6 +36,7 @@ const NAV_ORDER = NAV_TABS.map(t => t.to)
 export default function BottomNav() {
   const location = useLocation()
   const navigate = useNavigate()
+  const { user } = useAuthContext()
 
   const handleNav = (to: string) => {
     if (to === location.pathname) return
@@ -57,6 +59,7 @@ export default function BottomNav() {
     }}>
       {NAV_TABS.map(({ to, label, Icon }) => {
         const isActive = to === '/' ? location.pathname === '/' : location.pathname.startsWith(to)
+        const isSettings = to === '/settings'
         return (
           <button
             key={to}
@@ -82,7 +85,19 @@ export default function BottomNav() {
                   boxShadow: '0 0 8px var(--cyan-glow)',
                 }} />
               )}
-              <Icon />
+              {isSettings && user?.photoURL
+                ? <img
+                    src={user.photoURL}
+                    alt=""
+                    style={{
+                      width: 22, height: 22, borderRadius: '50%', objectFit: 'cover',
+                      border: `1.5px solid ${isActive ? 'var(--cyan)' : 'var(--text-faint)'}`,
+                      boxShadow: isActive ? '0 0 6px var(--cyan-glow)' : 'none',
+                      transition: 'border-color 0.2s, box-shadow 0.2s',
+                    }}
+                  />
+                : <Icon />
+              }
               <span style={{ fontSize: 9.5, fontWeight: isActive ? 600 : 400, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
                 {label}
               </span>
