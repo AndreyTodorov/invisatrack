@@ -1,11 +1,17 @@
 import { useState } from 'react'
 import type { DailyStats } from '../../types'
+import NavRow from '../../components/reports/NavRow'
 
 interface Props {
   dateStatsMap: Map<string, DailyStats>
   sessionDates: Set<string>
   goalMinutes: number
   today: string
+  offset: number
+  onPrev: () => void
+  onNext: () => void
+  onToday: () => void
+  isPrevDisabled: boolean
 }
 
 const WEEKDAYS = ['M', 'T', 'W', 'T', 'F', 'S', 'S']
@@ -19,26 +25,23 @@ function monthOffset(today: string, offset: number): { year: number; month: numb
   return { year, month }
 }
 
-export default function CalendarHeatmap({ dateStatsMap, sessionDates, goalMinutes, today }: Props) {
+export default function CalendarHeatmap({ dateStatsMap, sessionDates, goalMinutes, today, offset, onPrev, onNext, onToday, isPrevDisabled }: Props) {
   const [expanded, setExpanded] = useState(true)
-  const [offset, setOffset] = useState(0) // 0 = current month, -1 = prev, etc.
   const goalPct = (goalMinutes / 1440) * 100
 
-  const { year, month } = monthOffset(today, offset)
+  const { year, month } = monthOffset(today, -offset)
   const label = new Date(year, month - 1, 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
   const daysInMonth = new Date(year, month, 0).getDate()
   const firstDow = (new Date(year, month - 1, 1).getDay() + 6) % 7 // Mon-first offset
 
-  const isCurrentMonth = offset === 0
-
-  function cellStyle(date: string): { background: string; opacity: number } {
-    if (date > today) return { background: 'var(--surface-3)', opacity: 0.3 }
-    if (!sessionDates.has(date)) return { background: 'var(--surface-3)', opacity: 0.6 }
+  function cellStyle(date: string): { background: string; opacity: number; textColor: string } {
+    if (date > today) return { background: 'var(--surface-3)', opacity: 0.3, textColor: 'rgba(255,255,255,0.5)' }
+    if (!sessionDates.has(date)) return { background: 'var(--surface-3)', opacity: 0.6, textColor: 'rgba(255,255,255,0.5)' }
     const s = dateStatsMap.get(date)
-    if (!s) return { background: 'var(--surface-3)', opacity: 0.6 }
-    if (s.compliant) return { background: 'var(--green)', opacity: 0.85 }
-    if (s.wearPercentage >= goalPct * 0.85) return { background: 'var(--amber)', opacity: 0.8 }
-    return { background: 'var(--rose)', opacity: 0.75 }
+    if (!s) return { background: 'var(--surface-3)', opacity: 0.6, textColor: 'rgba(255,255,255,0.5)' }
+    if (s.compliant) return { background: 'var(--green)', opacity: 0.85, textColor: 'rgba(0,0,0,0.55)' }
+    if (s.wearPercentage >= goalPct * 0.85) return { background: 'var(--amber)', opacity: 0.8, textColor: 'rgba(0,0,0,0.55)' }
+    return { background: 'var(--rose)', opacity: 0.75, textColor: 'rgba(0,0,0,0.55)' }
   }
 
   return (
@@ -63,32 +66,15 @@ export default function CalendarHeatmap({ dateStatsMap, sessionDates, goalMinute
           borderRadius: 16, padding: '14px 16px',
           display: 'flex', flexDirection: 'column', gap: 14,
         }}>
-          {/* Month navigation */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <button
-              onClick={() => setOffset(o => o - 1)}
-              style={{
-                background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit',
-                fontSize: 18, color: 'var(--text-muted)', lineHeight: 1,
-                padding: '10px 16px', margin: '-10px -16px',
-              }}
-            >
-              ‹
-            </button>
-            <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{label}</span>
-            <button
-              onClick={() => setOffset(o => o + 1)}
-              disabled={isCurrentMonth}
-              style={{
-                background: 'none', border: 'none', cursor: isCurrentMonth ? 'default' : 'pointer',
-                fontFamily: 'inherit', fontSize: 18,
-                color: isCurrentMonth ? 'var(--surface-3)' : 'var(--text-muted)',
-                lineHeight: 1, padding: '10px 16px', margin: '-10px -16px',
-              }}
-            >
-              ›
-            </button>
-          </div>
+          <NavRow
+            label={label}
+            isPrevDisabled={isPrevDisabled}
+            isNextDisabled={offset === 0}
+            showToday={offset > 0}
+            onPrev={onPrev}
+            onNext={onNext}
+            onToday={onToday}
+          />
 
           {/* Day grid */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 4 }}>
@@ -100,7 +86,7 @@ export default function CalendarHeatmap({ dateStatsMap, sessionDates, goalMinute
               const d = i + 1
               const date = `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`
               const isToday = date === today
-              const { background, opacity } = cellStyle(date)
+              const { background, opacity, textColor } = cellStyle(date)
               return (
                 <div
                   key={date}
@@ -110,8 +96,13 @@ export default function CalendarHeatmap({ dateStatsMap, sessionDates, goalMinute
                     background, opacity,
                     outline: isToday ? '2px solid var(--cyan)' : 'none',
                     outlineOffset: '1px',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
                   }}
-                />
+                >
+                  <span style={{ fontSize: 9, color: textColor, fontWeight: 500, lineHeight: 1, userSelect: 'none' }}>
+                    {d}
+                  </span>
+                </div>
               )
             })}
           </div>
