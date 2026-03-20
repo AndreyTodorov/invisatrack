@@ -105,6 +105,7 @@ src/
 ├── App.tsx                       # Route definitions, auth guard
 ├── main.tsx                      # Entry point — HashRouter + context providers
 ├── constants.ts                  # App-wide magic numbers
+├── navDirection.ts               # Module-level push/pop nav direction state
 ├── test-setup.ts                 # Vitest global setup (mocks localStorage)
 │
 ├── types/
@@ -120,7 +121,8 @@ src/
 │   ├── useSets.ts                # Aligner set management
 │   ├── useReports.ts             # Statistics, streak, per-set analytics
 │   ├── useAuth.ts                # Thin wrapper around AuthContext
-│   └── useAutoAdvanceSet.ts      # Auto-advance to next set when endDate passes
+│   ├── useAutoAdvanceSet.ts      # Auto-advance to next set when endDate passes
+│   └── useSwipeTab.ts            # Touch swipe gesture → tab navigation
 │
 ├── services/
 │   ├── firebase.ts               # Firebase init, all ref helpers, CRUD helpers
@@ -140,12 +142,13 @@ src/
 │   ├── timer/
 │   │   ├── TimerButton.tsx       # Start/stop button with SVG budget ring
 │   │   ├── ActiveTimer.tsx       # HH:MM:SS display, cyan/rose glow
-│   │   └── TimerAlert.tsx        # Reminder modal (reached threshold)
+│   │   └── TimerAlert.tsx        # Reminder modal + snooze (reached threshold)
 │   ├── dashboard/
-│   │   ├── DailySummary.tsx      # Wear ring + Off Time / Removals / Budget Left
+│   │   ├── DailySummary.tsx      # 24h timeline bar + wear ring + stat tiles
+│   │   ├── CalendarHeatmap.tsx   # Monthly compliance calendar (green/amber/rose cells)
 │   │   ├── SessionList.tsx       # List of completed sessions
 │   │   ├── StreakBadge.tsx        # Compliance streak pill
-│   │   └── TreatmentProgress.tsx # Current set progress bar
+│   │   └── TreatmentProgress.tsx # Current set progress bar + per-day compliance dots
 │   ├── sessions/
 │   │   ├── AddSessionModal.tsx   # Manual session creation bottom sheet
 │   │   └── SessionEditModal.tsx  # Edit/delete session bottom sheet
@@ -161,9 +164,9 @@ src/
 │
 └── views/
     ├── HomeView.tsx              # Dashboard: timer, today's summary, session list
-    ├── HistoryView.tsx           # Session history grouped by local date
+    ├── HistoryView.tsx           # Session + set history with filters and month grouping
     ├── ReportsView.tsx           # Analytics dashboard (tabs: 7d / week / month / by set)
-    ├── SettingsView.tsx          # Profile, goals, treatment plan management
+    ├── SettingsView.tsx          # Nav-list settings with push/pop sub-screens
     ├── OnboardingView.tsx        # First-run setup (set number, total sets, goal)
     └── LoginView.tsx             # Google sign-in page (shown when not authenticated)
 ```
@@ -304,6 +307,35 @@ Sessions that span local midnight are split by `splitSessionByDay()` so stats cr
 
 `useAutoAdvanceSet` runs on mount (once per `currentSetNumber`). If the current set's `endDate` has passed it automatically creates the next set(s) and advances `treatment.currentSetNumber` forward, chaining through any consecutive expired sets in one pass. Pre-existing sets in the chain are recognised and skipped (only `treatment` is updated for those).
 
+### Settings navigation
+
+`SettingsView` renders a nav-list home screen with a `ProfileCard` (avatar, name, email, sign-out) and three `NavRow` entries: **Wear Goal**, **Treatment Plan**, and **Data & Export**. Tapping a row pushes a detail sub-screen using CSS `settings-push` / `settings-pop` animations (controlled by `navDir` state and a `navKey` counter). Swiping right from the left edge pops back to the list, mirroring iOS navigation conventions.
+
+The **Treatment Plan** sub-screen includes a **Duration override** field for the current aligner set, allowing its end date to be adjusted independently of the default cycle length.
+
+App version (`__APP_VERSION__`) and build date (`__BUILD_DATE__`) are injected at build time and displayed at the bottom of the list screen.
+
+### History view tabs
+
+`HistoryView` has two tabs — **Sessions** and **Sets** — switchable by tap or horizontal swipe (`useSwipeTab`).
+
+**Sessions tab** groups completed sessions by month. Each month header is collapsible and shows session count, compliant/total days, and a colour-coded compliance percentage badge. Within each month, date headers are sticky and show the daily wear time. Four filter chips narrow the list: All, This Set, Missed Days, This Month.
+
+**Sets tab** shows all aligner sets in reverse order, each card showing date range, session count, avg removals/day, compliant days, and a colour-coded wear progress bar.
+
+### Reports enhancements
+
+- **Best/Worst callout**: Two cards beneath the stats grid highlight the best and worst completed days in the selected period.
+- **Calendar heatmap**: The Month tab shows a `CalendarHeatmap` with month-by-month navigation. Each cell is coloured green (compliant), amber (≥ 85 % of goal), rose (below), or grey (no data).
+- **Tab persistence**: The selected Reports tab is saved to `localStorage` and restored on next visit.
+- **Swipe navigation**: Tabs in both ReportsView and HistoryView respond to horizontal swipe gestures via `useSwipeTab`.
+
+### Sync and connectivity indicators
+
+`HomeView` shows status pills in the header:
+- **Syncing…** (amber, pulsing dot) — IndexedDB data is loaded but Firebase treatment hasn't confirmed yet.
+- **Offline** (grey dot) — Firebase `connected` ref is `false`.
+
 ---
 
 ## Hooks Reference
@@ -312,10 +344,11 @@ Sessions that span local midnight are split by `splitSessionByDay()` so stats cr
 |---|---|---|
 | `useTimer(reminderMins, autoCapMins, setNumber)` | `{ elapsedMinutes, isRunning, reminderFired, autoCapped, start, stop }` | Reads active session from DataContext |
 | `useSessions()` | `{ sessions, startSession, stopSession, updateSession, deleteSession, addManualSession }` | All session writes go through here |
-| `useSets()` | `{ sets, startNewSet, endCurrentSet, updateTreatment }` | Manages `sets/` and `treatment/` in Firebase |
-| `useReports(goalMinutes)` | `{ dailyStats, weekStats, streak, allSegments }` | Computed from sessions in DataContext |
+| `useSets()` | `{ sets, startNewSet, endCurrentSet, updateTreatment, updateSet }` | Manages `sets/` and `treatment/` in Firebase |
+| `useReports(goalMinutes)` | `{ getDailyStatsRange, streak, getSetStats, allSegments, sets }` | Computed from sessions in DataContext |
 | `useAuth()` | `{ user, loading, signIn, signOut }` | Thin wrapper around AuthContext |
 | `useAutoAdvanceSet()` | `{ autoAdvancedSets, dismiss }` | Auto-advances expired sets on mount |
+| `useSwipeTab(onSwipe)` | `{ onTouchStart, onTouchEnd }` | Returns touch handlers; calls `onSwipe('left'\|'right')` on horizontal swipe |
 
 ---
 
@@ -325,18 +358,19 @@ Sessions that span local midnight are split by `splitSessionByDay()` so stats cr
 
 | Component | Props | Notes |
 |---|---|---|
-| `TimerButton` | `isRunning, onPress, disabled?, budgetPercent?` | SVG ring turns amber at 60% budget used, rose at 85% |
+| `TimerButton` | `isRunning, onPress, budgetPercent?, elapsedMinutes?, reminderFired?` | SVG ring turns amber at 60% budget used, rose at 85%; glow pulses when reminder fires |
 | `ActiveTimer` | `elapsedMinutes, reminderFired` | Pulses cyan/rose when `reminderFired` |
-| `TimerAlert` | `thresholdMinutes, onDismiss` | Shown by HomeView when reminder fires |
+| `TimerAlert` | `thresholdMinutes, onDismiss, onSnooze` | Shown by HomeView when reminder fires; supports 10-min snooze |
 
 ### Dashboard
 
 | Component | Props | Notes |
 |---|---|---|
-| `DailySummary` | `totalOffMinutes, removals, goalMinutes, streak, activeMinutes?` | Wear ring + 3 stat tiles; `activeMinutes` updates live |
-| `SessionList` | `sessions, onEdit` | Filters out active sessions (`endTime == null`) |
+| `DailySummary` | `totalOffMinutes, removals, goalMinutes, streak, sessions?, activeMinutes?` | 24h timeline bar + wear ring + stat tiles; `activeMinutes` updates live |
+| `CalendarHeatmap` | `dateStatsMap, sessionDates, goalMinutes, today` | Month grid with prev/next navigation; green = compliant, amber = near goal, rose = missed |
+| `SessionList` | `sessions, onEdit, activeSession?, activeElapsedMinutes?` | Filters out active sessions (`endTime == null`) unless passed via `activeSession` |
 | `StreakBadge` | `streak` | Amber pill; hidden at 0 |
-| `TreatmentProgress` | `treatment, defaultSetDurationDays` | Cyan progress bar for current set |
+| `TreatmentProgress` | `treatment, defaultSetDurationDays, currentSetStartDate?, currentSetEndDate?, currentSetDayStatus?, avgWearPct?, goalMinutes?` | Overall progress bar + per-day compliance dots + avg wear status badge |
 
 ### Sessions
 
@@ -368,10 +402,10 @@ Sessions that span local midnight are split by `splitSessionByDay()` so stats cr
 
 | Route | View | Notes |
 |---|---|---|
-| `/` | HomeView | Redirects to `/onboarding` if no treatment configured |
-| `/history` | HistoryView | Sessions grouped by local date with count + total off-time |
-| `/reports` | ReportsView | Tabs: 7 days / this week / this month / by set |
-| `/settings` | SettingsView | Goals, treatment plan, set switching, export, sign out |
+| `/` | HomeView | Dashboard: timer, sync/offline pill, today's summary, session list, treatment progress |
+| `/history` | HistoryView | Two tabs (Sessions / Sets); sessions grouped by month with filter chips and collapsible headers |
+| `/reports` | ReportsView | Tabs: 7 days / this week / this month / by set; swipe-to-change tabs; tab persisted to localStorage |
+| `/settings` | SettingsView | Nav-list home screen → push into Wear Goal / Treatment Plan / Data & Export sub-screens |
 | `/onboarding` | OnboardingView | First-run: set number, total sets, daily goal |
 | (unauthenticated) | LoginView | Google sign-in |
 
@@ -404,7 +438,12 @@ MAX_SESSION_DURATION_HOURS         = 24     // Validation ceiling for manual ses
 | `formatDuration` | `(minutes) → string` | `"HH:MM:SS"` (used in stat tiles) |
 | `formatDurationShort` | `(minutes) → string` | Human-readable: `"45 min"`, `"1h 20m"`, `"2h"` |
 | `diffMinutes` | `(startIso, endIso) → number` | Elapsed minutes between two UTC ISO strings |
-| `splitSessionByDay` | `(session, offsetMinutes) → DaySegment[]` | Splits a session across local-midnight boundaries |
+| `splitSessionByDay` | `(startIso, endIso, offsetMinutes, id) → DaySegment[]` | Splits a session across local-midnight boundaries |
+| `addDays` | `(dateStr, days) → string` | Add N days to a `"YYYY-MM-DD"` string |
+| `dateDiffDays` | `(startStr, endStr) → number` | Calendar days between two `"YYYY-MM-DD"` strings |
+| `todayLocalDate` | `() → string` | Today as `"YYYY-MM-DD"` in the device's local timezone |
+| `getTimezoneOffset` | `() → number` | Current device UTC offset in minutes |
+| `addMinutes` | `(isoString, minutes) → string` | Add N minutes to a UTC ISO string |
 
 ### `src/utils/stats.ts`
 
@@ -432,6 +471,7 @@ src/hooks/useTimer.test.ts
 src/hooks/useSessions.test.ts
 src/hooks/useSets.test.ts
 src/hooks/useReports.test.ts
+src/hooks/useAutoAdvanceSet.test.ts
 src/utils/stats.test.ts
 src/utils/time.test.ts
 src/utils/csv.test.ts
@@ -439,6 +479,8 @@ src/utils/deviceId.test.ts
 src/utils/sessionValidation.test.ts
 src/components/dashboard/DailySummary.test.tsx
 src/components/dashboard/SessionList.test.tsx
+src/contexts/DataContext.test.tsx
+src/views/HomeView.test.tsx
 ```
 
 ### Mocking conventions
@@ -454,8 +496,11 @@ src/components/dashboard/SessionList.test.tsx
 ### `tests.yml` — runs on every PR and push to `main`/`dev`
 
 1. Checkout, Node 22, `npm ci`
-2. `npm test` (Vitest)
-3. `npm run test:coverage`
+2. ESLint (`npm run lint`)
+3. TypeScript type-check (`npm run type-check`)
+4. `npm test` (Vitest)
+5. `npm run test:coverage`
+6. Build verification (`npm run build`)
 
 ### `deploy.yml` — runs on push to `main` (or manual dispatch)
 
@@ -527,3 +572,8 @@ All colours, spacing, and typography are controlled via CSS custom properties de
 | `timer-pulse` | Active timer card pulses when reminder fires |
 | `animate-fade-in` | Post-session summary card fade in |
 | `animate-slide-up` | Bottom sheet modals slide up |
+| `settings-push` | Settings sub-screen slides in from the right (push navigation) |
+| `settings-pop` | Settings sub-screen slides in from the left (back navigation) |
+| `tab-enter-right` | Tab content slides in from the right (advancing tabs) |
+| `tab-enter-left` | Tab content slides in from the left (going back in tabs) |
+| `sync-dot-pulse` | Amber dot pulses in the sync status indicator |
