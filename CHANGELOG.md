@@ -1,3 +1,11 @@
+## [1.17.3](https://github.com/AndreyTodorov/invisatrack/compare/v1.17.2...v1.17.3) (2026-03-20)
+
+
+### Bug Fixes
+
+* polyfill crypto.randomUUID for non-secure contexts (LAN HTTP testing) ([d149763](https://github.com/AndreyTodorov/invisatrack/commit/d149763177e32d1335b746b3fdcde4401d492ed5))
+* resolve date input overflow on iOS Safari in edit modals ([ac23e52](https://github.com/AndreyTodorov/invisatrack/commit/ac23e52daf1010577a67420fba125dd3c64550c7))
+
 ## [1.17.2](https://github.com/AndreyTodorov/invisatrack/compare/v1.17.1...v1.17.2) (2026-03-20)
 
 
