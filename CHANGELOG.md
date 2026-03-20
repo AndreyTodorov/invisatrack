@@ -1,3 +1,10 @@
+# [1.14.0](https://github.com/AndreyTodorov/invisatrack/compare/v1.13.0...v1.14.0) (2026-03-20)
+
+
+### Features
+
+* smooth push/pop animations for settings navigation ([52da714](https://github.com/AndreyTodorov/invisatrack/commit/52da714c153d7b710599c0e2f2a091c5f89b5ead))
+
 # [1.13.0](https://github.com/AndreyTodorov/invisatrack/compare/v1.12.1...v1.13.0) (2026-03-20)
 
 
