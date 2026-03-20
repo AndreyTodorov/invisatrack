@@ -58,6 +58,14 @@ input[type="text"] {
   transition: border-color 0.2s;
 }
 
+/* iOS Safari: strip native button rendering so inputs respect CSS width constraints.
+   The native date/datetime picker still opens on tap — only the intrinsic sizing changes. */
+input[type="datetime-local"],
+input[type="date"] {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
 input[type="number"]:focus,
 input[type="datetime-local"]:focus,
 input[type="date"]:focus {

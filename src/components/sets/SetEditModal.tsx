@@ -187,7 +187,6 @@ export default function SetEditModal({ set, stats, isCurrent, prevSet, nextSet, 
           width: '100%', maxWidth: 440,
           maxHeight: 'calc(100% - 40px)',
           overflowY: 'auto',
-          overflowX: 'hidden',
           WebkitOverflowScrolling: 'touch',
           display: 'flex', flexDirection: 'column', gap: 18,
         }}
