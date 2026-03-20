@@ -1,3 +1,11 @@
+# [1.15.0](https://github.com/AndreyTodorov/invisatrack/compare/v1.14.0...v1.15.0) (2026-03-20)
+
+
+### Features
+
+* add DevBanner component with title prefix ([4812075](https://github.com/AndreyTodorov/invisatrack/commit/4812075d28ce676724c0219eebe1ab41a0bb1e2a))
+* mount DevBanner in AppShell ([117e5a7](https://github.com/AndreyTodorov/invisatrack/commit/117e5a7ba0dac5c269e9ed298c92b9d76a08b84c))
+
 # [1.14.0](https://github.com/AndreyTodorov/invisatrack/compare/v1.13.0...v1.14.0) (2026-03-20)
 
 
