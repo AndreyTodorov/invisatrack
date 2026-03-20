@@ -163,6 +163,8 @@ export default function SetEditModal({ set, stats, isCurrent, prevSet, nextSet, 
   return (
     <div
       onClick={handleClose}
+      onTouchStart={e => e.stopPropagation()}
+      onTouchEnd={e => e.stopPropagation()}
       style={{
         position: 'fixed', inset: 0,
         background: 'rgba(0,0,0,0.7)',
@@ -185,6 +187,7 @@ export default function SetEditModal({ set, stats, isCurrent, prevSet, nextSet, 
           width: '100%', maxWidth: 440,
           maxHeight: 'calc(100% - 40px)',
           overflowY: 'auto',
+          overflowX: 'hidden',
           WebkitOverflowScrolling: 'touch',
           display: 'flex', flexDirection: 'column', gap: 18,
         }}

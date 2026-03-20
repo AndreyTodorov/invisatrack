@@ -49,14 +49,18 @@ export default function AddSessionModal({ onClose }: Props) {
   }
 
   return (
-    <div style={{
-      position: 'fixed', inset: 0,
-      background: 'rgba(0,0,0,0.7)',
-      backdropFilter: 'blur(8px)',
-      WebkitBackdropFilter: 'blur(8px)',
-      display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
-      zIndex: 100,
-    }}>
+    <div
+      onTouchStart={e => e.stopPropagation()}
+      onTouchEnd={e => e.stopPropagation()}
+      style={{
+        position: 'fixed', inset: 0,
+        background: 'rgba(0,0,0,0.7)',
+        backdropFilter: 'blur(8px)',
+        WebkitBackdropFilter: 'blur(8px)',
+        display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
+        overflow: 'hidden',
+        zIndex: 100,
+      }}>
       <div
         className="animate-slide-up"
         style={{
@@ -65,6 +69,7 @@ export default function AddSessionModal({ onClose }: Props) {
           borderRadius: '24px 24px 0 0',
           padding: '24px 20px 36px',
           width: '100%', maxWidth: 440,
+          overflowX: 'hidden',
           display: 'flex', flexDirection: 'column', gap: 18,
         }}
       >
