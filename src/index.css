@@ -123,3 +123,21 @@ input[type="number"]::-webkit-inner-spin-button {
 .tab-enter-left {
   animation: tab-enter-from-left 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
+
+@keyframes settings-push {
+  from { opacity: 0; transform: translateX(48px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes settings-pop {
+  from { opacity: 0; transform: translateX(-32px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+.settings-push {
+  animation: settings-push 0.3s cubic-bezier(0.32, 0.72, 0, 1) both;
+}
+
+.settings-pop {
+  animation: settings-pop 0.26s cubic-bezier(0.32, 0.72, 0, 1) both;
+}

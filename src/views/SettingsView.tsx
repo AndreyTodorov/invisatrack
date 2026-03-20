@@ -201,6 +201,13 @@ export default function SettingsPageView() {
   const { updateTreatment, updateSet } = useSets()
 
   const [activeSection, setActiveSection] = useState<Section | null>(null)
+  const [navDir, setNavDir] = useState<'push' | 'pop'>('push')
+  const [navKey, setNavKey] = useState(0)
+  const navigateTo = (section: Section | null, dir: 'push' | 'pop') => {
+    setNavDir(dir)
+    setNavKey(k => k + 1)
+    setActiveSection(section)
+  }
 
   // Goal split into hours + minutes
   const [goalHours, setGoalHours] = useState(Math.floor(DEFAULT_DAILY_WEAR_GOAL_MINUTES / 60))
@@ -365,7 +372,7 @@ export default function SettingsPageView() {
   const handleTouchEnd = (e: React.TouchEvent) => {
     const dx = e.changedTouches[0].clientX - touchStartX.current
     const dy = Math.abs(e.changedTouches[0].clientY - touchStartY.current)
-    if (touchStartX.current < 40 && dx > 60 && dx > dy) setActiveSection(null)
+    if (touchStartX.current < 40 && dx > 60 && dx > dy) navigateTo(null, 'pop')
   }
 
   // Summaries shown in nav list rows
@@ -387,7 +394,7 @@ export default function SettingsPageView() {
 
   const back = (
     <button
-      onClick={() => setActiveSection(null)}
+      onClick={() => navigateTo(null, 'pop')}
       style={{
         display: 'flex', alignItems: 'center', gap: 6,
         background: 'none', border: 'none', color: 'var(--cyan)',
@@ -405,10 +412,15 @@ export default function SettingsPageView() {
 
   return (
     <div
-      style={{ padding: '0 16px 32px', maxWidth: 440, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 12 }}
+      style={{ padding: '0 16px 32px', maxWidth: 440, margin: '0 auto' }}
       onTouchStart={activeSection ? handleTouchStart : undefined}
       onTouchEnd={activeSection ? handleTouchEnd : undefined}
     >
+      <div
+        key={navKey}
+        className={navDir === 'push' ? 'settings-push' : 'settings-pop'}
+        style={{ display: 'flex', flexDirection: 'column', gap: 12 }}
+      >
 
       {/* ── LIST VIEW ── */}
       {activeSection === null && <>
@@ -420,19 +432,19 @@ export default function SettingsPageView() {
           <NavRow
             icon="⏱" iconBg="rgba(34,211,238,0.12)"
             title="Wear Goal" summary={wearSummary}
-            onClick={() => setActiveSection('wear')}
+            onClick={() => navigateTo('wear', 'push')}
           />
           <div style={{ height: 1, background: 'var(--border)', margin: '0 18px' }} />
           <NavRow
             icon="🦷" iconBg="rgba(74,222,128,0.1)"
             title="Treatment Plan" summary={treatmentSummary}
-            onClick={() => setActiveSection('treatment')}
+            onClick={() => navigateTo('treatment', 'push')}
           />
           <div style={{ height: 1, background: 'var(--border)', margin: '0 18px' }} />
           <NavRow
             icon="📤" iconBg="rgba(96,165,250,0.1)"
             title="Data & Export" summary="Export your session history"
-            onClick={() => setActiveSection('data')}
+            onClick={() => navigateTo('data', 'push')}
           />
         </div>
 
@@ -599,6 +611,7 @@ export default function SettingsPageView() {
         <ExportButton />
       </>}
 
+      </div>
     </div>
   )
 }
