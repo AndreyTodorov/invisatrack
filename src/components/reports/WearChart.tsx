@@ -10,6 +10,7 @@ interface Props {
   data: DailyStats[]
   goalMinutes: number
   period: '7d' | 'week' | 'month'
+  periodLabel: string
 }
 
 function CustomTooltip({ active, payload, label }: { active?: boolean; payload?: { value: number; payload: { offMinutes: number } }[]; label?: string }) {
@@ -34,7 +35,7 @@ function CustomTooltip({ active, payload, label }: { active?: boolean; payload?:
   )
 }
 
-export default function WearChart({ data, goalMinutes, period }: Props) {
+export default function WearChart({ data, goalMinutes, period, periodLabel }: Props) {
   const chartData = data.map(d => ({
     dateKey: d.date, // YYYY-MM-DD, used for weekday lookup
     date: d.date.slice(8, 10) + '.' + d.date.slice(5, 7), // DD.MM fallback
@@ -45,10 +46,8 @@ export default function WearChart({ data, goalMinutes, period }: Props) {
 
   const goalPercent = Math.round((goalMinutes / MINUTES_PER_DAY) * 100)
   const goalHours = Math.round(goalMinutes / 60)
-  const periodLabel = period === '7d' ? 'last 7 days' : period === 'week' ? 'this week' : 'this month'
-
   const formatXTick = (_value: string, index: number): string => {
-    if (period === 'month') return chartData[index]?.date ?? _value // DD.MM
+    if (period === 'month') return _value // _value is already DD.MM from dataKey="date"
     const entry = chartData[index]
     if (!entry) return _value
     return new Date(entry.dateKey + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short' })

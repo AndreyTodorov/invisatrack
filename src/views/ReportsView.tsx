@@ -346,7 +346,9 @@ export default function ReportsView() {
       {period !== 'set' && stats.length === 0 && (
         <div style={{ textAlign: 'center', padding: '40px 0' }}>
           <p style={{ color: 'var(--text-faint)', fontSize: 14, marginBottom: 6 }}>
-            No sessions recorded{period === '7d' ? ' in the last 7 days' : period === 'week' ? ' this week' : ' this month'}.
+            {period === '7d'
+              ? 'No sessions recorded in the last 7 days.'
+              : `No sessions recorded for ${periodLabel}.`}
           </p>
           <p style={{ color: 'var(--text-faint)', fontSize: 12 }}>
             Start tracking wear time to see your data here.
@@ -356,7 +358,7 @@ export default function ReportsView() {
 
       {period !== 'set' && stats.length > 0 && (
         <>
-          <WearChart data={stats} goalMinutes={goalMinutes} period={period as '7d' | 'week' | 'month'} />
+          <WearChart data={stats} goalMinutes={goalMinutes} period={period as '7d' | 'week' | 'month'} periodLabel={periodLabel} />
           <StatsGrid stats={stats} goalMinutes={goalMinutes} />
           <BestWorstCallout stats={stats} todayStr={todayStr} />
           {period === 'month' && (() => {
