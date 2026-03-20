@@ -27,7 +27,7 @@ npx tsx scripts/seed.ts [--preset minimal|history|full] [--uid <uid>]
 ```
 
 - `--preset` defaults to `minimal`
-- `--uid` skips user creation and seeds directly into the given uid
+- `--uid` skips user creation and performs a full overwrite of all four nodes (profile, treatment, sets, sessions) for the given uid
 - Without `--uid`, creates `seed@test.com` / `password123` in the Auth emulator and prints the uid + credentials
 
 ## Presets
@@ -38,9 +38,13 @@ npx tsx scripts/seed.ts [--preset minimal|history|full] [--uid <uid>]
 | history  | 5    | ~70      | 5 weeks   | Dashboard, streak, daily summary     |
 | full     | 20   | ~500     | 5 months  | Reports, charts, long treatment arc  |
 
+## Requirements
+
+- Node.js ≥ 18 (required for native `fetch`)
+
 ## Data Seeded
 
-All four Firestore collections under `users/{uid}/`:
+All four RTDB nodes under `users/{uid}/`:
 
 ### `profile`
 Seeded with sensible defaults matching `UserProfile`:
@@ -60,15 +64,15 @@ Seeded with sensible defaults matching `UserProfile`:
 
 ### `sets` (`AlignerSet[]`)
 - Sequential set numbers starting at 1
-- Each set: `startDate = previousSet.endDate`, `endDate = startDate + 7 days`
-- Last set: `endDate` set to `startDate + 7 days` (current set in progress)
+- Each past set: `startDate = previousSet.endDate`, `endDate = startDate + 7 days`
+- Last set (current, in progress): `endDate` is `null` — matches the data model's convention for an active set
 - `note`: null
 
 ### `sessions` (`Session[]`)
-- Distributed across set durations, anchored to today and working backwards
+- All seeded sessions are completed — `endTime` and `endTimezoneOffset` are always non-null
+- Distributed across set durations, anchored so the most recent session ends no later than the start of today (no future timestamps)
 - Realistic daily pattern: 2–4 removals per day, each 20–90 minutes
-- Each session: `startTime`, `endTime` (both UTC ISO 8601), matching timezone offsets, `autoCapped: false`, `createdOffline: false`
-- `deviceId`: fixed constant `"seed-device-001"`
+- Fields per session: `startTime`, `endTime` (UTC ISO 8601), `startTimezoneOffset`, `endTimezoneOffset` (both `0` for UTC), `setNumber`, `autoCapped: false`, `createdOffline: false`, `deviceId: "seed-device-001"`, `updatedAt` (same value as `endTime`)
 - Sessions always reference a valid `setNumber`
 
 ## Implementation
@@ -83,22 +87,26 @@ Returns `localId` (uid). If user already exists (email taken), the script exits 
 ### RTDB emulator — bulk write
 ```
 PUT http://localhost:9000/users/{uid}.json?ns=demo-invisalign
+Headers: Authorization: Bearer owner
 Body: { profile, treatment, sets: { [id]: set, ... }, sessions: { [id]: session, ... } }
 ```
-Single atomic write. IDs generated via `crypto.randomUUID()`.
+Single atomic write — **this is a full destructive overwrite** of the entire `users/{uid}` node. Running the script twice against the same uid will replace all previous data. IDs generated via `crypto.randomUUID()`.
 
 ### Session generation algorithm
 Working backwards from today:
-1. For each calendar day in the preset's span, generate 2–4 removal windows
-2. Each window: random start minute within waking hours (7am–11pm), random duration 20–90 min
-3. Ensure windows don't overlap
-4. Map each removal window to a `Session` record
+1. Build an ordered list of sets with their `startDate`–`endDate` ranges (last set: `startDate` to today)
+2. For each calendar day in the preset's span (ending yesterday), generate 2–4 removal windows
+3. Each window: random start minute within waking hours (7am–11pm), random duration 20–90 min
+4. Ensure windows don't overlap within the same day
+5. Derive `setNumber` for each window: find the set whose `startDate ≤ day < endDate` (or `startDate ≤ day` for the current set)
+6. Map each removal window to a `Session` record
 
 ## Error Handling
 
 - Emulator not running → clear error: "Could not connect to Firebase Auth emulator at localhost:9099. Is `npm run emulators` running?"
-- Email already in use → exit with message + suggest `--uid`
+- Email already in use → exit with message + suggest `--uid <uid>` (uid from previous run's output)
 - Invalid preset name → exit with usage message
+- `--uid` provided but uid not found in Auth emulator → exit with clear message: "No Auth user found for uid <uid>. Did you mean to omit --uid and create a fresh user?" (verified via `GET /identitytoolkit.googleapis.com/v1/accounts:lookup`)
 
 ## Running
 
