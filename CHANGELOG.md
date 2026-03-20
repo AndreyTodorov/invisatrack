@@ -1,3 +1,10 @@
+## [1.17.1](https://github.com/AndreyTodorov/invisatrack/compare/v1.17.0...v1.17.1) (2026-03-20)
+
+
+### Bug Fixes
+
+* make modal sheets scroll reliably on iOS Safari ([4a13a55](https://github.com/AndreyTodorov/invisatrack/commit/4a13a55fe7675f826c019d9d64063ff9196095d7))
+
 # [1.17.0](https://github.com/AndreyTodorov/invisatrack/compare/v1.16.0...v1.17.0) (2026-03-20)
 
 
