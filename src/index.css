@@ -28,6 +28,33 @@
   --green-bg: rgba(74, 222, 128, 0.09);
 }
 
+[data-theme="neobrutalism"] {
+  --bg: #FFFBF0;
+  --surface: #FFFFFF;
+  --surface-2: #F5F0E8;
+  --surface-3: #EDE8DC;
+  --border: rgba(0, 0, 0, 0.85);
+  --border-strong: #000000;
+
+  --text: #0A0A0A;
+  --text-muted: #3D3D3D;
+  --text-faint: #8A8A8A;
+
+  --cyan: #0066FF;
+  --cyan-bg: rgba(0, 102, 255, 0.1);
+  --cyan-glow: rgba(0, 102, 255, 0.2);
+
+  --rose: #FF3B30;
+  --rose-bg: rgba(255, 59, 48, 0.1);
+  --rose-glow: rgba(255, 59, 48, 0.25);
+
+  --amber: #FFD600;
+  --amber-bg: rgba(255, 214, 0, 0.15);
+
+  --green: #00C752;
+  --green-bg: rgba(0, 199, 82, 0.1);
+}
+
 * {
   -webkit-tap-highlight-color: transparent;
   box-sizing: border-box;

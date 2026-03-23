@@ -2,6 +2,7 @@ import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { getNavDirection } from './navDirection'
 import { AuthProvider, useAuthContext } from './contexts/AuthContext'
 import { DataProvider } from './contexts/DataContext'
+import { ThemeProvider } from './contexts/ThemeContext'
 import AppShell from './components/layout/AppShell'
 import LoginView from './views/LoginView'
 import HomeView from './views/HomeView'
@@ -38,9 +39,11 @@ function AuthenticatedApp() {
 
   return (
     <DataProvider uid={user.uid}>
-      <AppShell>
-        <AnimatedRoutes />
-      </AppShell>
+      <ThemeProvider>
+        <AppShell>
+          <AnimatedRoutes />
+        </AppShell>
+      </ThemeProvider>
     </DataProvider>
   )
 }

@@ -27,6 +27,7 @@ export interface UserProfile {
   reminderThresholdMinutes: number
   autoCapMinutes: number
   createdAt: string
+  theme?: string
 }
 
 export interface Treatment {
