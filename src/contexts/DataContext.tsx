@@ -76,10 +76,18 @@ export function DataProvider({ uid, children }: { uid: string; children: ReactNo
 
       // FIX CR-2: Merge Firebase data with local-only (offline) sessions
       // Keep local sessions that aren't in Firebase yet (still in syncQueue)
+      // FIX: prefer local in-memory session if its updatedAt is newer (prevents
+      // a lost offline stopSession write from being overwritten by stale Firebase data,
+      // which would make a completed session appear active and trigger auto-cap days later)
       setSessions(prev => {
+        const prevMap = new Map(prev.map(s => [s.id, s]))
         const firebaseIds = new Set(firebaseSessions.map(s => s.id))
         const localOnly = prev.filter(s => !firebaseIds.has(s.id))
-        return [...firebaseSessions, ...localOnly]
+        const merged = firebaseSessions.map(fbSession => {
+          const local = prevMap.get(fbSession.id)
+          return local && local.updatedAt > fbSession.updatedAt ? local : fbSession
+        })
+        return [...merged, ...localOnly]
       })
 
       // FIX CR-2: Only persist if Firebase has newer data (prevents overwriting pending offline writes)

@@ -3,9 +3,9 @@ services:
     image: andreysenov/firebase-tools
     env_file: .env.local
     ports:
-      - "9099:9099"   # Auth
-      - "9000:9000"   # Realtime Database
-      - "4000:4000"   # Emulator UI
+      - "9099:9099" # Auth
+      - "9000:9000" # Realtime Database
+      - "4000:4000" # Emulator UI
     volumes:
       - .:/home/node
     command: firebase emulators:start --project demo-invisalign
