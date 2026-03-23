@@ -90,8 +90,8 @@ export default function AddSessionModal({ onClose }: Props) {
           <p style={{
             fontSize: 13, color: 'var(--rose)',
             background: 'var(--rose-bg)',
-            border: '1px solid rgba(248,113,113,0.2)',
-            borderRadius: 10, padding: '10px 14px',
+            border: 'var(--border-width) solid rgba(255,68,68,0.2)',
+            borderRadius: 'var(--radius-card)', padding: '10px 14px',
             margin: 0,
           }}>{validationError}</p>
         )}
@@ -101,7 +101,7 @@ export default function AddSessionModal({ onClose }: Props) {
             onClick={onClose}
             style={{
               flex: 1, background: 'var(--surface-3)', color: 'var(--text-muted)',
-              border: '1px solid var(--border)', borderRadius: 12,
+              border: 'var(--border-width) solid var(--border)', borderRadius: 'var(--radius-btn)',
               padding: '13px 0', fontSize: 14, fontWeight: 600, fontFamily: 'inherit', cursor: 'pointer',
             }}
           >
@@ -114,8 +114,8 @@ export default function AddSessionModal({ onClose }: Props) {
               flex: 1,
               background: canSubmit ? 'var(--cyan)' : 'var(--surface-3)',
               color: canSubmit ? '#06090f' : 'var(--text-faint)',
-              border: canSubmit ? 'none' : '1px solid var(--border)',
-              borderRadius: 12,
+              border: canSubmit ? 'none' : 'var(--border-width) solid var(--border)',
+              borderRadius: 'var(--radius-btn)',
               padding: '13px 0', fontSize: 14, fontWeight: 600, fontFamily: 'inherit',
               cursor: canSubmit ? 'pointer' : 'default',
             }}

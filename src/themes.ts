@@ -5,8 +5,8 @@ export interface ThemeDefinition {
 }
 
 export const THEMES: ThemeDefinition[] = [
-  { id: 'obsidian',     name: 'Obsidian',     swatchColors: ['#060913', '#22D3EE', '#E8EEFF'] },
-  { id: 'light',        name: 'Light',        swatchColors: ['#FFFBF0', '#0066FF', '#0A0A0A'] },
+  { id: 'obsidian',     name: 'Obsidian',     swatchColors: ['#060913', '#00D8FF', '#E8EEFF'] },
+  { id: 'light',        name: 'Light',        swatchColors: ['#FFFBF0', '#0055FF', '#0A0A0A'] },
   { id: 'neobrutalism', name: 'Neobrutalism', swatchColors: ['#FAFAFA', '#FFD400', '#0D0D0D'] },
 ]
 

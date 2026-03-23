@@ -13,19 +13,19 @@
   --text-muted: #6272A0;
   --text-faint: #2E3D5C;
 
-  --cyan: #22D3EE;
-  --cyan-bg: rgba(34, 211, 238, 0.09);
-  --cyan-glow: rgba(34, 211, 238, 0.25);
+  --cyan: #00D8FF;
+  --cyan-bg: rgba(0, 216, 255, 0.09);
+  --cyan-glow: rgba(0, 216, 255, 0.28);
 
-  --rose: #F87171;
-  --rose-bg: rgba(248, 113, 113, 0.09);
-  --rose-glow: rgba(248, 113, 113, 0.30);
+  --rose: #FF4444;
+  --rose-bg: rgba(255, 68, 68, 0.09);
+  --rose-glow: rgba(255, 68, 68, 0.30);
 
-  --amber: #FCD34D;
-  --amber-bg: rgba(252, 211, 77, 0.09);
+  --amber: #FFC200;
+  --amber-bg: rgba(255, 194, 0, 0.09);
 
-  --green: #4ADE80;
-  --green-bg: rgba(74, 222, 128, 0.09);
+  --green: #00E676;
+  --green-bg: rgba(0, 230, 118, 0.09);
 
   --radius-card: 18px;
   --radius-btn: 12px;
@@ -46,19 +46,19 @@
   --text-muted: #3D3D3D;
   --text-faint: #8A8A8A;
 
-  --cyan: #0066FF;
-  --cyan-bg: rgba(0, 102, 255, 0.1);
-  --cyan-glow: rgba(0, 102, 255, 0.2);
+  --cyan: #0055FF;
+  --cyan-bg: rgba(0, 85, 255, 0.1);
+  --cyan-glow: rgba(0, 85, 255, 0.2);
 
-  --rose: #FF3B30;
-  --rose-bg: rgba(255, 59, 48, 0.1);
-  --rose-glow: rgba(255, 59, 48, 0.25);
+  --rose: #FF2020;
+  --rose-bg: rgba(255, 32, 32, 0.1);
+  --rose-glow: rgba(255, 32, 32, 0.25);
 
-  --amber: #FFD600;
-  --amber-bg: rgba(255, 214, 0, 0.15);
+  --amber: #FF9500;
+  --amber-bg: rgba(255, 149, 0, 0.13);
 
-  --green: #00C752;
-  --green-bg: rgba(0, 199, 82, 0.1);
+  --green: #00B341;
+  --green-bg: rgba(0, 179, 65, 0.1);
 }
 
 [data-theme="neobrutalism"] {

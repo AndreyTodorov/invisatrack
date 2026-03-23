@@ -27,7 +27,7 @@ const labelStyle: React.CSSProperties = {
 }
 
 const btnBase: React.CSSProperties = {
-  flex: 1, border: 'none', borderRadius: 12,
+  flex: 1, border: 'none', borderRadius: 'var(--radius-btn)',
   padding: '13px 0', fontSize: 14, fontWeight: 600,
   fontFamily: 'inherit', cursor: 'pointer',
 }
@@ -118,8 +118,8 @@ export default function SessionEditModal({ session, onClose }: Props) {
           <p style={{
             fontSize: 13, color: 'var(--rose)',
             background: 'var(--rose-bg)',
-            border: '1px solid rgba(248,113,113,0.2)',
-            borderRadius: 10, padding: '10px 14px',
+            border: 'var(--border-width) solid rgba(255,68,68,0.2)',
+            borderRadius: 'var(--radius-card)', padding: '10px 14px',
           }}>{error}</p>
         )}
 
@@ -135,8 +135,8 @@ export default function SessionEditModal({ session, onClose }: Props) {
         {confirmingDelete ? (
           <div style={{
             background: 'var(--rose-bg)',
-            border: '1px solid rgba(248,113,113,0.2)',
-            borderRadius: 14, padding: '14px',
+            border: 'var(--border-width) solid rgba(255,68,68,0.2)',
+            borderRadius: 'var(--radius-card)', padding: '14px',
             display: 'flex', flexDirection: 'column', gap: 12,
           }}>
             <p style={{ fontSize: 13, color: 'var(--rose)', fontWeight: 500, textAlign: 'center' }}>
@@ -161,7 +161,7 @@ export default function SessionEditModal({ session, onClose }: Props) {
                   ...btnBase, flex: 1,
                   background: hasChanges ? 'var(--surface-3)' : 'transparent',
                   color: hasChanges ? 'var(--text-muted)' : 'var(--text-faint)',
-                  border: hasChanges ? '1px solid var(--border)' : '1px solid transparent',
+                  border: hasChanges ? 'var(--border-width) solid var(--border)' : 'var(--border-width) solid transparent',
                   cursor: hasChanges ? 'pointer' : 'default',
                 }}
               >
@@ -175,7 +175,7 @@ export default function SessionEditModal({ session, onClose }: Props) {
                   flex: 2,
                   background: hasChanges ? 'var(--cyan)' : 'var(--surface-3)',
                   color: hasChanges ? '#06090f' : 'var(--text-faint)',
-                  border: hasChanges ? 'none' : '1px solid var(--border)',
+                  border: hasChanges ? 'none' : 'var(--border-width) solid var(--border)',
                   cursor: hasChanges ? 'pointer' : 'default',
                 }}
               >

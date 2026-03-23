@@ -16,7 +16,7 @@ const labelStyle: React.CSSProperties = {
 }
 
 const btnBase: React.CSSProperties = {
-  flex: 1, border: 'none', borderRadius: 12,
+  flex: 1, border: 'none', borderRadius: 'var(--radius-btn)',
   padding: '13px 0', fontSize: 14, fontWeight: 600,
   fontFamily: 'inherit', cursor: 'pointer',
 }
@@ -91,18 +91,18 @@ export default function StartNewSetModal({ currentSetNumber, defaultDurationDays
         {error && (
           <p style={{
             fontSize: 13, color: 'var(--rose)',
-            background: 'var(--rose-bg)', border: '1px solid rgba(248,113,113,0.2)',
-            borderRadius: 10, padding: '10px 14px', margin: 0,
+            background: 'var(--rose-bg)', border: 'var(--border-width) solid rgba(255,68,68,0.2)',
+            borderRadius: 'var(--radius-card)', padding: '10px 14px', margin: 0,
           }}>{error}</p>
         )}
 
         {confirming ? (
           <>
-            <p style={{ fontSize: 14, color: 'var(--amber)', background: 'var(--amber-bg)', border: '1px solid rgba(252,211,77,0.2)', borderRadius: 12, padding: '14px', margin: 0, textAlign: 'center', fontWeight: 500 }}>
+            <p style={{ fontSize: 14, color: 'var(--amber)', background: 'var(--amber-bg)', border: 'var(--border-width) solid rgba(255,194,0,0.2)', borderRadius: 'var(--radius-card)', padding: '14px', margin: 0, textAlign: 'center', fontWeight: 500 }}>
               Start Set {numVal} from {startDate} ({durVal} days)?{startDate > todayLocalDate() ? ' Current set stays active until then.' : ` This will close Set ${currentSetNumber}.`}
             </p>
             <div style={{ display: 'flex', gap: 10 }}>
-              <button onClick={() => setConfirming(false)} style={{ ...btnBase, background: 'var(--surface-3)', color: 'var(--text-muted)', border: '1px solid var(--border)' }}>
+              <button onClick={() => setConfirming(false)} style={{ ...btnBase, background: 'var(--surface-3)', color: 'var(--text-muted)', border: 'var(--border-width) solid var(--border)' }}>
                 Back
               </button>
               <button onClick={handleSave} disabled={saving} style={{ ...btnBase, background: 'var(--green)', color: '#06090f' }}>
@@ -148,7 +148,7 @@ export default function StartNewSetModal({ currentSetNumber, defaultDurationDays
             </div>
 
             <div style={{ display: 'flex', gap: 10 }}>
-              <button onClick={onClose} style={{ ...btnBase, background: 'var(--surface-3)', color: 'var(--text-muted)', border: '1px solid var(--border)' }}>
+              <button onClick={onClose} style={{ ...btnBase, background: 'var(--surface-3)', color: 'var(--text-muted)', border: 'var(--border-width) solid var(--border)' }}>
                 Cancel
               </button>
               <button
@@ -158,7 +158,7 @@ export default function StartNewSetModal({ currentSetNumber, defaultDurationDays
                   ...btnBase,
                   background: canProceed ? 'var(--cyan)' : 'var(--surface-3)',
                   color: canProceed ? '#06090f' : 'var(--text-faint)',
-                  border: canProceed ? 'none' : '1px solid var(--border)',
+                  border: canProceed ? 'none' : 'var(--border-width) solid var(--border)',
                   cursor: canProceed ? 'pointer' : 'default',
                 }}
               >

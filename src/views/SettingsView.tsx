@@ -54,7 +54,7 @@ function ProfileCard({ user, onSignOut }: { user: import('firebase/auth').User; 
               onClick={onSignOut}
               style={{
                 background: 'var(--rose-bg)', color: 'var(--rose)',
-                border: '1px solid rgba(248,113,113,0.25)', borderRadius: 8,
+                border: 'var(--border-width) solid rgba(255,68,68,0.25)', borderRadius: 'var(--radius-btn)',
                 padding: '6px 12px', fontSize: 12, fontWeight: 600,
                 fontFamily: 'inherit', cursor: 'pointer', whiteSpace: 'nowrap',
               }}
@@ -65,7 +65,7 @@ function ProfileCard({ user, onSignOut }: { user: import('firebase/auth').User; 
               onClick={() => setConfirming(false)}
               style={{
                 background: 'var(--surface-3)', color: 'var(--text-muted)',
-                border: '1px solid var(--border)', borderRadius: 8,
+                border: 'var(--border-width) solid var(--border)', borderRadius: 'var(--radius-btn)',
                 padding: '6px 12px', fontSize: 12, fontWeight: 600,
                 fontFamily: 'inherit', cursor: 'pointer',
               }}
@@ -77,7 +77,7 @@ function ProfileCard({ user, onSignOut }: { user: import('firebase/auth').User; 
             onClick={() => setConfirming(true)}
             style={{
               flexShrink: 0, background: 'none', color: 'var(--rose)',
-              border: '1px solid rgba(248,113,113,0.2)', borderRadius: 8,
+              border: 'var(--border-width) solid rgba(255,68,68,0.2)', borderRadius: 'var(--radius-btn)',
               padding: '6px 12px', fontSize: 12, fontWeight: 500,
               fontFamily: 'inherit', cursor: 'pointer', whiteSpace: 'nowrap',
             }}
@@ -100,8 +100,8 @@ const rowStyle: React.CSSProperties = {
 }
 const rowLabel: React.CSSProperties = { fontSize: 14, color: 'var(--text-muted)', flex: 1 }
 const compactInput: React.CSSProperties = {
-  width: 56, background: 'var(--surface-3)', border: '1px solid var(--border-strong)',
-  borderRadius: 8, color: 'var(--text)', fontFamily: 'inherit', fontSize: 14, fontWeight: 600,
+  width: 56, background: 'var(--surface-3)', border: 'var(--border-width) solid var(--border-strong)',
+  borderRadius: 'var(--radius-btn)', color: 'var(--text)', fontFamily: 'inherit', fontSize: 14, fontWeight: 600,
   padding: '6px 8px', textAlign: 'center', outline: 'none',
 }
 const unit: React.CSSProperties = { fontSize: 12, color: 'var(--text-muted)' }
@@ -119,7 +119,7 @@ function NavRow({ icon, iconBg, title, summary, onClick }: {
       }}
     >
       <div style={{
-        width: 34, height: 34, borderRadius: 9, background: iconBg, flexShrink: 0,
+        width: 34, height: 34, borderRadius: 'var(--radius-btn)', background: iconBg, flexShrink: 0,
         display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16,
       }}>
         {icon}
@@ -174,8 +174,8 @@ function SaveButton({
         disabled={isDisabled}
         style={{
           width: '100%', background: bg, color: textColor,
-          border: isDisabled ? '1px solid var(--border)' : 'none',
-          borderRadius: 12, padding: '13px 0',
+          border: isDisabled ? 'var(--border-width) solid var(--border)' : 'none',
+          borderRadius: 'var(--radius-btn)', padding: '13px 0',
           fontSize: 14, fontWeight: 700, fontFamily: 'inherit',
           cursor: isDisabled ? 'default' : 'pointer',
           letterSpacing: '0.02em',
@@ -464,13 +464,13 @@ export default function SettingsPageView() {
 
         <div style={{ background: 'var(--surface)', border: 'var(--border-width) solid var(--border)', borderRadius: 'var(--radius-card)', boxShadow: 'var(--card-shadow)', padding: '4px 0' }}>
           <NavRow
-            icon="⏱" iconBg="rgba(34,211,238,0.12)"
+            icon="⏱" iconBg="rgba(0,216,255,0.12)"
             title="Wear Goal" summary={wearSummary}
             onClick={() => navigateTo('wear', 'push')}
           />
           <div style={{ height: 1, background: 'var(--border)', margin: '0 18px' }} />
           <NavRow
-            icon="🦷" iconBg="rgba(74,222,128,0.1)"
+            icon="🦷" iconBg="rgba(0,230,118,0.1)"
             title="Treatment Plan" summary={treatmentSummary}
             onClick={() => navigateTo('treatment', 'push')}
           />
@@ -679,8 +679,8 @@ export default function SettingsPageView() {
                 key={theme.id}
                 onClick={() => setPreviewThemeId(theme.id)}
                 style={{
-                  background: bg, border: `2px solid ${isSelected ? 'var(--cyan)' : 'var(--border)'}`,
-                  borderRadius: 14, padding: 0, cursor: 'pointer', overflow: 'hidden',
+                  background: bg, border: `var(--border-width) solid ${isSelected ? 'var(--cyan)' : 'var(--border)'}`,
+                  borderRadius: 'var(--radius-card)', padding: 0, cursor: 'pointer', overflow: 'hidden',
                   fontFamily: 'inherit', outline: isSelected ? '2px solid var(--cyan)' : 'none',
                   outlineOffset: 2, position: 'relative',
                 }}

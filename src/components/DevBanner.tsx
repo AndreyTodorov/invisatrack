@@ -38,8 +38,8 @@ export default function DevBanner() {
 
   return (
     <div style={{
-      background: 'rgba(252, 211, 77, 0.12)',
-      borderBottom: '1px solid rgba(252, 211, 77, 0.35)',
+      background: 'rgba(255, 194, 0, 0.12)',
+      borderBottom: '1px solid rgba(255, 194, 0, 0.35)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
@@ -48,14 +48,14 @@ export default function DevBanner() {
     }}>
       <span style={{
         width: 6, height: 6, borderRadius: '50%',
-        background: '#FCD34D',
-        boxShadow: '0 0 6px #FCD34D',
+        background: '#FFC200',
+        boxShadow: '0 0 6px #FFC200',
         display: 'inline-block',
         animation: 'dev-banner-pulse 1.4s ease-in-out infinite',
         flexShrink: 0,
       }} />
       <span style={{
-        color: '#FCD34D',
+        color: '#FFC200',
         fontSize: 10,
         fontWeight: 600,
         letterSpacing: '0.12em',

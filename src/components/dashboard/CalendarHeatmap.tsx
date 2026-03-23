@@ -62,8 +62,9 @@ export default function CalendarHeatmap({ dateStatsMap, sessionDates, goalMinute
 
       {expanded && (
         <div style={{
-          background: 'var(--surface)', border: '1px solid var(--border)',
-          borderRadius: 16, padding: '14px 16px',
+          background: 'var(--surface)', border: 'var(--border-width) solid var(--border)',
+          borderRadius: 'var(--radius-card)', padding: '14px 16px',
+          boxShadow: 'var(--card-shadow)',
           display: 'flex', flexDirection: 'column', gap: 14,
         }}>
           <NavRow

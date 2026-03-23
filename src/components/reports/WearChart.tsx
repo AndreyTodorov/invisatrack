@@ -20,8 +20,8 @@ function CustomTooltip({ active, payload, label }: { active?: boolean; payload?:
   return (
     <div style={{
       background: 'var(--surface-2)',
-      border: '1px solid var(--border-strong)',
-      borderRadius: 10, padding: '8px 12px',
+      border: 'var(--border-width) solid var(--border-strong)',
+      borderRadius: 'var(--radius-card)', padding: '8px 12px',
       fontSize: 13,
     }}>
       <div style={{ color: 'var(--text-muted)', marginBottom: 4 }}>{label}</div>
@@ -56,8 +56,9 @@ export default function WearChart({ data, goalMinutes, period, periodLabel }: Pr
   return (
     <div style={{
       background: 'var(--surface)',
-      border: '1px solid var(--border)',
-      borderRadius: 20, padding: '12px 8px 12px',
+      border: 'var(--border-width) solid var(--border)',
+      borderRadius: 'var(--radius-card)', padding: '12px 8px 12px',
+      boxShadow: 'var(--card-shadow)',
     }}>
       <div style={{
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
@@ -69,7 +70,7 @@ export default function WearChart({ data, goalMinutes, period, periodLabel }: Pr
         }}>
           Worn per day — {periodLabel}
         </span>
-        <span style={{ fontSize: 9, color: 'rgba(248,113,113,0.8)' }}>
+        <span style={{ fontSize: 9, color: 'rgba(255,68,68,0.8)' }}>
           goal {goalHours}h ▲
         </span>
       </div>
@@ -93,15 +94,15 @@ export default function WearChart({ data, goalMinutes, period, periodLabel }: Pr
           <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255,255,255,0.03)', radius: 6 }} />
           <ReferenceLine
             y={goalPercent}
-            stroke="rgba(248,113,113,0.5)"
+            stroke="rgba(255,68,68,0.5)"
             strokeDasharray="4 3"
-            label={{ value: 'Goal', fill: 'rgba(248,113,113,0.7)', fontSize: 10, fontFamily: 'Outfit' }}
+            label={{ value: 'Goal', fill: 'rgba(255,68,68,0.7)', fontSize: 10, fontFamily: 'Outfit' }}
           />
           <Bar dataKey="wear" radius={[5, 5, 0, 0]} maxBarSize={40}>
             {chartData.map((entry, i) => (
               <Cell
                 key={i}
-                fill={entry.compliant ? 'rgba(34,211,238,0.7)' : 'rgba(248,113,113,0.7)'}
+                fill={entry.compliant ? 'rgba(0,216,255,0.7)' : 'rgba(255,68,68,0.7)'}
               />
             ))}
           </Bar>

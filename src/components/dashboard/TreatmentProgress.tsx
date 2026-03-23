@@ -100,9 +100,9 @@ export default function TreatmentProgress({ treatment, defaultSetDurationDays, c
                     ? status ? 'var(--green)' : 'var(--rose)'
                     : 'var(--surface-3)',
                   boxShadow: hasData && status
-                    ? '0 0 4px rgba(74,222,128,0.4)'
+                    ? '0 0 4px rgba(0,230,118,0.4)'
                     : hasData && !status
-                    ? '0 0 4px rgba(248,113,113,0.4)'
+                    ? '0 0 4px rgba(255,68,68,0.4)'
                     : 'none',
                   opacity: isFuture ? 0.35 : 1,
                 }}
@@ -124,9 +124,9 @@ export default function TreatmentProgress({ treatment, defaultSetDurationDays, c
             marginTop: 10,
             display: 'flex', alignItems: 'center', gap: 6,
             padding: '8px 12px',
-            background: onTrack ? 'rgba(74,222,128,0.07)' : 'var(--amber-bg)',
-            border: `1px solid ${onTrack ? 'rgba(74,222,128,0.15)' : 'rgba(252,211,77,0.2)'}`,
-            borderRadius: 10,
+            background: onTrack ? 'rgba(0,230,118,0.07)' : 'var(--amber-bg)',
+            border: `var(--border-width) solid ${onTrack ? 'rgba(0,230,118,0.15)' : 'rgba(255,194,0,0.2)'}`,
+            borderRadius: 'var(--radius-card)',
           }}>
             <span style={{ fontSize: 13 }}>{onTrack ? '✓' : '⚠'}</span>
             <span style={{ fontSize: 12, color: onTrack ? 'var(--green)' : 'var(--amber)', fontWeight: 500 }}>

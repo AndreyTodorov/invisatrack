@@ -15,8 +15,9 @@ export default function ActiveTimer({ elapsedMinutes, reminderFired }: Props) {
       className="animate-fade-in"
       style={{
         background: bg,
-        border: `1px solid ${reminderFired ? 'rgba(248,113,113,0.2)' : 'rgba(34,211,238,0.15)'}`,
-        borderRadius: 20,
+        border: `var(--border-width) solid ${reminderFired ? 'rgba(255,68,68,0.2)' : 'rgba(0,216,255,0.15)'}`,
+        borderRadius: 'var(--radius-card)',
+        boxShadow: 'var(--card-shadow)',
         padding: '20px 24px',
         textAlign: 'center',
       }}

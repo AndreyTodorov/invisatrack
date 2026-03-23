@@ -112,8 +112,8 @@ export default function HistoryView() {
             onClick={() => setShowAdd(true)}
             style={{
               fontSize: 13, fontWeight: 600, color: 'var(--cyan)',
-              background: 'rgba(34,211,238,0.08)', border: '1px solid rgba(34,211,238,0.2)',
-              borderRadius: 20, padding: '5px 14px', fontFamily: 'inherit', cursor: 'pointer',
+              background: 'rgba(0,216,255,0.08)', border: 'var(--border-width) solid rgba(0,216,255,0.2)',
+              borderRadius: 'var(--radius-btn)', padding: '5px 14px', fontFamily: 'inherit', cursor: 'pointer',
             }}
           >
             + Add
@@ -124,8 +124,8 @@ export default function HistoryView() {
             onClick={() => setShowStartNewSet(true)}
             style={{
               fontSize: 13, fontWeight: 600, color: 'var(--green)',
-              background: 'rgba(74,222,128,0.08)', border: '1px solid rgba(74,222,128,0.2)',
-              borderRadius: 20, padding: '5px 14px', fontFamily: 'inherit', cursor: 'pointer',
+              background: 'rgba(0,230,118,0.08)', border: 'var(--border-width) solid rgba(0,230,118,0.2)',
+              borderRadius: 'var(--radius-btn)', padding: '5px 14px', fontFamily: 'inherit', cursor: 'pointer',
             }}
           >
             + New Set
@@ -136,8 +136,9 @@ export default function HistoryView() {
       {/* Tab switcher */}
       <div style={{
         display: 'flex', gap: 4,
-        background: 'var(--surface)', border: '1px solid var(--border)',
-        borderRadius: 12, padding: 4, marginBottom: 20,
+        background: 'var(--surface)', border: 'var(--border-width) solid var(--border)',
+        borderRadius: 'var(--radius-card)', padding: 4, marginBottom: 20,
+        boxShadow: 'var(--card-shadow)',
       }}>
         {(['sessions', 'sets'] as Tab[]).map(t => (
           <button
@@ -147,7 +148,7 @@ export default function HistoryView() {
               flex: 1,
               background: tab === t ? 'var(--surface-3)' : 'transparent',
               color: tab === t ? 'var(--text)' : 'var(--text-muted)',
-              border: 'none', borderRadius: 8,
+              border: 'none', borderRadius: 'var(--radius-btn)',
               padding: '8px 0', fontSize: 13, fontWeight: tab === t ? 600 : 400,
               fontFamily: 'inherit', cursor: 'pointer',
               transition: 'background 0.15s, color 0.15s',
@@ -170,9 +171,9 @@ export default function HistoryView() {
                 onClick={() => setFilter(key)}
                 style={{
                   fontSize: 12, fontWeight: filter === key ? 600 : 400,
-                  padding: '5px 12px', borderRadius: 20,
-                  background: filter === key ? 'rgba(34,211,238,0.12)' : 'var(--surface)',
-                  border: `1px solid ${filter === key ? 'rgba(34,211,238,0.3)' : 'var(--border)'}`,
+                  padding: '5px 12px', borderRadius: 'var(--radius-btn)',
+                  background: filter === key ? 'rgba(0,216,255,0.12)' : 'var(--surface)',
+                  border: `var(--border-width) solid ${filter === key ? 'rgba(0,216,255,0.3)' : 'var(--border)'}`,
                   color: filter === key ? 'var(--cyan)' : 'var(--text-muted)',
                   fontFamily: 'inherit', cursor: 'pointer',
                   transition: 'all 0.15s',
@@ -201,8 +202,8 @@ export default function HistoryView() {
               const monthLabel = new Date(monthKey + '-15').toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
 
               const pctColor = compliancePct >= 80 ? 'var(--green)' : compliancePct >= 60 ? 'var(--amber)' : 'var(--rose)'
-              const pctBg = compliancePct >= 80 ? 'rgba(74,222,128,0.1)' : compliancePct >= 60 ? 'var(--amber-bg)' : 'var(--rose-bg)'
-              const pctBorder = compliancePct >= 80 ? 'rgba(74,222,128,0.2)' : compliancePct >= 60 ? 'rgba(252,211,77,0.2)' : 'rgba(248,113,113,0.2)'
+              const pctBg = compliancePct >= 80 ? 'rgba(0,230,118,0.1)' : compliancePct >= 60 ? 'var(--amber-bg)' : 'var(--rose-bg)'
+              const pctBorder = compliancePct >= 80 ? 'rgba(0,230,118,0.2)' : compliancePct >= 60 ? 'rgba(255,194,0,0.2)' : 'rgba(255,68,68,0.2)'
 
               return (
                 <div key={monthKey} style={{ marginBottom: 24 }}>
@@ -221,8 +222,8 @@ export default function HistoryView() {
                         {totalSessions} sessions · {compliantDays}/{dates.length} days
                       </span>
                       <span style={{
-                        fontSize: 11, fontWeight: 600, padding: '2px 7px', borderRadius: 6,
-                        color: pctColor, background: pctBg, border: `1px solid ${pctBorder}`,
+                        fontSize: 11, fontWeight: 600, padding: '2px 7px', borderRadius: 'var(--radius-badge)',
+                        color: pctColor, background: pctBg, border: `var(--border-width) solid ${pctBorder}`,
                       }}>
                         {compliancePct}%
                       </span>
@@ -259,9 +260,9 @@ export default function HistoryView() {
                                 <span style={{
                                   fontSize: 11, fontWeight: 600,
                                   color: dayStat.compliant ? 'var(--green)' : 'var(--rose)',
-                                  background: dayStat.compliant ? 'rgba(74,222,128,0.1)' : 'var(--rose-bg)',
-                                  border: `1px solid ${dayStat.compliant ? 'rgba(74,222,128,0.2)' : 'rgba(248,113,113,0.2)'}`,
-                                  borderRadius: 6, padding: '2px 7px',
+                                  background: dayStat.compliant ? 'rgba(0,230,118,0.1)' : 'var(--rose-bg)',
+                                  border: `var(--border-width) solid ${dayStat.compliant ? 'rgba(0,230,118,0.2)' : 'rgba(255,68,68,0.2)'}`,
+                                  borderRadius: 'var(--radius-badge)', padding: '2px 7px',
                                 }}>
                                   {formatDuration(Math.round(1440 - dayStat.totalOffMinutes))}
                                 </span>
@@ -302,8 +303,9 @@ export default function HistoryView() {
                   key={s.id}
                   onClick={() => setEditingSet(s)}
                   style={{
-                    background: 'var(--surface)', border: `1px solid ${isCurrent ? 'rgba(34,211,238,0.3)' : 'var(--border)'}`,
-                    borderRadius: 16, padding: '14px 16px',
+                    background: 'var(--surface)', border: `var(--border-width) solid ${isCurrent ? 'rgba(0,216,255,0.3)' : 'var(--border)'}`,
+                    borderRadius: 'var(--radius-card)', padding: '14px 16px',
+                    boxShadow: 'var(--card-shadow)',
                     display: 'flex', flexDirection: 'column', gap: 8,
                     textAlign: 'left', fontFamily: 'inherit', cursor: 'pointer',
                     width: '100%',
@@ -317,17 +319,17 @@ export default function HistoryView() {
                       {isCurrent && (
                         <span style={{
                           fontSize: 10, fontWeight: 600, color: 'var(--cyan)',
-                          background: 'var(--cyan-bg)', border: '1px solid rgba(34,211,238,0.2)',
-                          borderRadius: 20, padding: '2px 8px',
+                          background: 'var(--cyan-bg)', border: 'var(--border-width) solid rgba(0,216,255,0.2)',
+                          borderRadius: 'var(--radius-badge)', padding: '2px 8px',
                         }}>Current</span>
                       )}
                       {stats.totalRemovals > 0 && (
                         <span style={{
                           fontSize: 11, fontWeight: 600,
                           color: stats.avgWearPct >= goalPct ? 'var(--green)' : stats.avgWearPct >= 75 ? 'var(--amber)' : 'var(--rose)',
-                          background: stats.avgWearPct >= goalPct ? 'rgba(74,222,128,0.1)' : stats.avgWearPct >= 75 ? 'var(--amber-bg)' : 'var(--rose-bg)',
-                          border: `1px solid ${stats.avgWearPct >= goalPct ? 'rgba(74,222,128,0.2)' : stats.avgWearPct >= 75 ? 'rgba(252,211,77,0.2)' : 'rgba(248,113,113,0.2)'}`,
-                          borderRadius: 6, padding: '2px 7px',
+                          background: stats.avgWearPct >= goalPct ? 'rgba(0,230,118,0.1)' : stats.avgWearPct >= 75 ? 'var(--amber-bg)' : 'var(--rose-bg)',
+                          border: `var(--border-width) solid ${stats.avgWearPct >= goalPct ? 'rgba(0,230,118,0.2)' : stats.avgWearPct >= 75 ? 'rgba(255,194,0,0.2)' : 'rgba(255,68,68,0.2)'}`,
+                          borderRadius: 'var(--radius-badge)', padding: '2px 7px',
                         }}>
                           {stats.avgWearPct >= goalPct ? 'On track' : stats.avgWearPct >= 75 ? 'Near goal' : 'Below goal'}
                         </span>

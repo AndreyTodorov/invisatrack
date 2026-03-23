@@ -33,8 +33,8 @@ export default function StatsGrid({ stats, goalMinutes }: Props) {
       : `${formatDuration(absDiff)} under goal`;
   const badgeColor =
     diffMinutes >= 0
-      ? { color: "var(--green)", bg: "rgba(74,222,128,0.1)", border: "rgba(74,222,128,0.25)" }
-      : { color: "var(--rose)", bg: "rgba(248,113,113,0.1)", border: "rgba(248,113,113,0.2)" };
+      ? { color: "var(--green)", bg: "rgba(0,230,118,0.1)", border: "rgba(0,230,118,0.25)" }
+      : { color: "var(--rose)", bg: "rgba(255,68,68,0.1)", border: "rgba(255,68,68,0.2)" };
 
   const color = goalColor(avgWornMinutes, goalMinutes);
 
@@ -58,8 +58,8 @@ export default function StatsGrid({ stats, goalMinutes }: Props) {
       <div
         style={{
           background:
-            "linear-gradient(135deg, rgba(34,211,238,0.06) 0%, rgba(34,211,238,0.02) 100%)",
-          border: "var(--border-width) solid rgba(34,211,238,0.2)",
+            "linear-gradient(135deg, rgba(0,216,255,0.06) 0%, rgba(0,216,255,0.02) 100%)",
+          border: "var(--border-width) solid rgba(0,216,255,0.2)",
           borderRadius: "var(--radius-card)",
           boxShadow: "var(--card-shadow)",
           padding: "14px 14px 12px",
@@ -130,7 +130,7 @@ export default function StatsGrid({ stats, goalMinutes }: Props) {
               width: `${wornFillPct}%`,
               height: "100%",
               borderRadius: 4,
-              background: "linear-gradient(90deg, #22D3EE 0%, #4ADE80 100%)",
+              background: "linear-gradient(90deg, #00D8FF 0%, #00E676 100%)",
             }}
           />
           <div
@@ -140,14 +140,14 @@ export default function StatsGrid({ stats, goalMinutes }: Props) {
               left: `${goalNotchPct}%`,
               width: 2,
               height: 12,
-              background: "rgba(248,113,113,0.7)",
+              background: "rgba(255,68,68,0.7)",
               borderRadius: 1,
             }}
           />
         </div>
         <div style={{ display: "flex", justifyContent: "space-between", marginTop: 5 }}>
           <span style={{ fontSize: 8, color: "var(--text-faint)" }}>0h</span>
-          <span style={{ fontSize: 8, color: "rgba(248,113,113,0.6)" }}>
+          <span style={{ fontSize: 8, color: "rgba(255,68,68,0.6)" }}>
             goal {Math.round(goalMinutes / 60)}h
           </span>
           <span style={{ fontSize: 8, color: "var(--text-faint)" }}>24h</span>

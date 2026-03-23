@@ -128,16 +128,16 @@ export default function SetReportCard({ setNumber, current, previous, durationDa
         <div style={{ height: 6, background: 'rgba(255,255,255,0.07)', borderRadius: 4, overflow: 'visible', position: 'relative' }}>
           <div style={{
             width: `${wornFillPct}%`, height: '100%', borderRadius: 4,
-            background: 'linear-gradient(90deg, #22D3EE 0%, #4ADE80 100%)',
+            background: 'linear-gradient(90deg, #00D8FF 0%, #00E676 100%)',
           }} />
           <div style={{
             position: 'absolute', top: -3, left: `${goalNotchPct}%`,
-            width: 2, height: 12, background: 'rgba(248,113,113,0.7)', borderRadius: 1,
+            width: 2, height: 12, background: 'rgba(255,68,68,0.7)', borderRadius: 1,
           }} />
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
           <span style={{ fontSize: 8, color: 'var(--text-faint)' }}>0h</span>
-          <span style={{ fontSize: 8, color: 'rgba(248,113,113,0.6)' }}>goal {goalHours}h</span>
+          <span style={{ fontSize: 8, color: 'rgba(255,68,68,0.6)' }}>goal {goalHours}h</span>
           <span style={{ fontSize: 8, color: 'var(--text-faint)' }}>24h</span>
         </div>
       </div>

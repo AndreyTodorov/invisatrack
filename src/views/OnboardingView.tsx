@@ -82,9 +82,9 @@ export default function OnboardingView() {
         {/* Header */}
         <div style={{ textAlign: 'center', marginBottom: 8 }}>
           <div style={{
-            width: 56, height: 56, borderRadius: 18,
+            width: 56, height: 56, borderRadius: 'var(--radius-card)',
             background: 'var(--cyan-bg)',
-            border: '1px solid rgba(34,211,238,0.2)',
+            border: 'var(--border-width) solid rgba(0,216,255,0.2)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontSize: 26, margin: '0 auto 16px',
           }}>
@@ -100,8 +100,8 @@ export default function OnboardingView() {
 
         {error && (
           <div style={{
-            background: 'var(--rose-bg)', border: '1px solid rgba(248,113,113,0.2)',
-            borderRadius: 12, padding: '12px 14px', fontSize: 13, color: 'var(--rose)',
+            background: 'var(--rose-bg)', border: 'var(--border-width) solid rgba(255,68,68,0.2)',
+            borderRadius: 'var(--radius-card)', padding: '12px 14px', fontSize: 13, color: 'var(--rose)',
           }}>
             {error}
           </div>
@@ -110,8 +110,9 @@ export default function OnboardingView() {
         {/* Form card */}
         <div style={{
           background: 'var(--surface)',
-          border: '1px solid var(--border)',
-          borderRadius: 20, padding: '22px 20px',
+          border: 'var(--border-width) solid var(--border)',
+          borderRadius: 'var(--radius-card)', padding: '22px 20px',
+          boxShadow: 'var(--card-shadow)',
           display: 'flex', flexDirection: 'column', gap: 20,
         }}>
           <div>
@@ -163,7 +164,7 @@ export default function OnboardingView() {
             width: '100%',
             background: saving ? 'var(--surface-3)' : 'var(--cyan)',
             color: saving ? 'var(--text-muted)' : '#06090f',
-            border: 'none', borderRadius: 14,
+            border: 'none', borderRadius: 'var(--radius-btn)',
             padding: '15px 0', fontSize: 16, fontWeight: 700,
             fontFamily: 'inherit', cursor: saving ? 'not-allowed' : 'pointer',
             transition: 'background 0.2s',
