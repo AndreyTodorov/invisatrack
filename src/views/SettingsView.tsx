@@ -685,7 +685,7 @@ export default function SettingsPageView() {
                   <div style={{ flex: 1, background: textColor }} />
                 </div>
                 <div style={{ padding: '8px 12px 10px', textAlign: 'left' }}>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{theme.name}</div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: textColor }}>{theme.name}</div>
                 </div>
                 {isSelected && (
                   <div style={{
