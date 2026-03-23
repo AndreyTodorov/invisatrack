@@ -203,6 +203,13 @@ export default function SettingsPageView() {
   const { savedThemeId, previewThemeId, setPreviewThemeId } = useTheme()
   const { updateTreatment, updateSet } = useSets()
 
+  // Revert live preview when navigating away from Settings via the bottom nav.
+  // Refs capture the latest values so the cleanup closure is never stale.
+  const savedThemeIdCleanupRef = useRef(savedThemeId)
+  useEffect(() => { savedThemeIdCleanupRef.current = savedThemeId }, [savedThemeId])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => () => { setPreviewThemeId(savedThemeIdCleanupRef.current) }, [])
+
   const [activeSection, setActiveSection] = useState<Section | null>(null)
   const [navDir, setNavDir] = useState<'push' | 'pop'>('push')
   const [navKey, setNavKey] = useState(0)
@@ -245,7 +252,7 @@ export default function SettingsPageView() {
   const [setDurationSaveState, setSetDurationSaveState] = useState<SaveState>('idle')
 
   useEffect(() => {
-    /* eslint-disable react-hooks/set-state-in-effect */
+     
     if (profile) {
       const h = Math.floor(profile.dailyWearGoalMinutes / 60)
       const m = profile.dailyWearGoalMinutes % 60
@@ -270,7 +277,7 @@ export default function SettingsPageView() {
       setSetDurationOverride(overrideStr)
       setSetDurationOverrideInit(overrideStr)
     }
-    /* eslint-enable react-hooks/set-state-in-effect */
+     
   }, [profile, treatment, sets])
 
   // Dirty detection
