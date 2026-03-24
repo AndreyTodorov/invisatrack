@@ -1,3 +1,10 @@
+## [1.19.3](https://github.com/AndreyTodorov/invisatrack/compare/v1.19.2...v1.19.3) (2026-03-24)
+
+
+### Bug Fixes
+
+* changed model ([c7c52c7](https://github.com/AndreyTodorov/invisatrack/commit/c7c52c7cd3e60849ebf20c818787d93529de4176))
+
 ## [1.19.2](https://github.com/AndreyTodorov/invisatrack/compare/v1.19.1...v1.19.2) (2026-03-24)
 
 
