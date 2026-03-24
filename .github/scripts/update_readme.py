@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """
 README Updater — CI script
-Language and framework agnostic. Gathers project context via generic
-discovery, calls the Anthropic API, and writes the updated README.
+Language and framework agnostic. Uses two focused API calls:
+  1. Analyse context → produce change report
+  2. Apply changes   → produce updated README
 """
 
 import datetime
@@ -11,22 +12,28 @@ import subprocess
 import sys
 from pathlib import Path
 
-import anthropic
+try:
+    import anthropic
+except ImportError:
+    print(
+        "[readme-updater] ERROR: anthropic package not installed.\n"
+        "Run: pip install anthropic",
+        file=sys.stderr,
+    )
+    sys.exit(1)
 
 # ── Config ────────────────────────────────────────────────────────────────────
 SKILL_PATH  = Path(".claude/skills/readme-updater/SKILL.md")
 README_PATH = Path("README.md")
-MODEL       = "claude-sonnet-4-6"
-MAX_TOKENS  = 8096
+MODEL       = "claude-opus-4-5"
+MAX_TOKENS  = 16000   # enough for large READMEs
 
-# Directories to exclude from tree scan (language-agnostic)
 EXCLUDE_DIRS = [
     ".git", "vendor", "node_modules", "__pycache__",
     "target", ".gradle", "dist", "build", ".cache",
     ".venv", "venv", ".tox", "coverage", ".nyc_output",
 ]
 
-# Manifest files that reveal the stack — check all, use whichever exist
 MANIFESTS = [
     "package.json", "composer.json", "Gemfile", "Gemfile.lock",
     "go.mod", "go.sum", "Cargo.toml", "pyproject.toml",
@@ -52,44 +59,31 @@ def read_file(path, fallback: str = "") -> str:
         return fallback
 
 
-def section(title: str, content: str) -> str:
-    """Wrap content in a labeled XML-like block for the prompt."""
-    if not content or content == fallback_str(content):
-        return ""
-    return f"<{title}>\n{content}\n</{title}>\n"
-
-
-def fallback_str(s: str) -> bool:
-    return s in ("", "(not found)", "(none)")
-
-
 # ── Context gathering ─────────────────────────────────────────────────────────
 def gather_context() -> dict:
     print("[readme-updater] Gathering project context...")
 
-    # Git history
     last_sha = run("git log -1 --format='%H' -- README.md")
     if last_sha:
         commits = run(
             f"git log {last_sha}..HEAD --no-merges --format='%H%n%s%n%b%n----'"
         )
-        count = run(f"git log {last_sha}..HEAD --no-merges --oneline | wc -l").strip()
+        count = run(
+            f"git log {last_sha}..HEAD --no-merges --oneline | wc -l"
+        ).strip()
     else:
         commits = run("git log -30 --no-merges --format='%H%n%s%n%b%n----'")
         count   = "unknown (no prior README commit)"
 
     print(f"[readme-updater] Commits to analyse: {count}")
 
-    # Detect which manifest files exist and read them
     found_manifests = {}
     for name in MANIFESTS:
-        matches = list(Path(".").glob(name))
-        for m in matches[:1]:  # first match only
+        for m in list(Path(".").glob(name))[:1]:
             content = read_file(m)
             if content:
                 found_manifests[str(m)] = content
 
-    # Env variable discovery (generic patterns across languages)
     env_keys = run(
         r"grep -rh "
         r"-e 'os\.environ' -e 'process\.env\.' -e 'ENV\[' "
@@ -109,15 +103,13 @@ def gather_context() -> dict:
         fallback="(none found)"
     )
 
-    # Task runner / script discovery
     scripts = []
     makefile_targets = run("grep -E '^[a-zA-Z_-]+:' Makefile 2>/dev/null | head -20")
     if makefile_targets:
         scripts.append(f"Makefile targets:\n{makefile_targets}")
 
     for f in ["package.json", "composer.json"]:
-        raw = read_file(f)
-        if raw:
+        if read_file(f):
             s = run(
                 f"cat {f} | python3 -c \""
                 "import sys,json; d=json.load(sys.stdin); "
@@ -126,25 +118,18 @@ def gather_context() -> dict:
             if s:
                 scripts.append(f"{f} scripts:\n{s}")
 
-    # Container / infra
-    docker_compose = read_file("docker-compose.yml",
-                        read_file("docker-compose.yaml", ""))
+    docker_compose = read_file(
+        "docker-compose.yml", read_file("docker-compose.yaml", "")
+    )
     dockerfile = run(
-        "grep -E '^(FROM|EXPOSE|ENTRYPOINT|CMD|ENV)' Dockerfile 2>/dev/null",
-        fallback=""
+        "grep -E '^(FROM|EXPOSE|ENTRYPOINT|CMD|ENV)' Dockerfile 2>/dev/null"
     )
     infra_files = run(
-        "ls .github/workflows/ kubernetes/ helm/ terraform/ infra/ 2>/dev/null",
-        fallback=""
+        "ls .github/workflows/ kubernetes/ helm/ terraform/ infra/ 2>/dev/null"
     )
 
-    # Directory tree
-    exclude_args = " ".join(
-        f"-not -path '*/{d}/*'" for d in EXCLUDE_DIRS
-    )
-    dir_tree = run(
-        f"find . -maxdepth 2 {exclude_args} | sort | head -60"
-    )
+    exclude_args = " ".join(f"-not -path '*/{d}/*'" for d in EXCLUDE_DIRS)
+    dir_tree = run(f"find . -maxdepth 2 {exclude_args} | sort | head -60")
 
     return {
         "readme":         read_file(README_PATH, "(README.md not found)"),
@@ -161,18 +146,14 @@ def gather_context() -> dict:
     }
 
 
-# ── Prompt builder ────────────────────────────────────────────────────────────
-def build_user_message(ctx: dict) -> str:
+# ── Shared context block ──────────────────────────────────────────────────────
+def build_context_block(ctx: dict) -> str:
     manifest_block = "\n".join(
-        f"<manifest path='{path}'>\n{content}\n</manifest>"
-        for path, content in ctx["manifests"].items()
+        f"<manifest path='{p}'>\n{c}\n</manifest>"
+        for p, c in ctx["manifests"].items()
     ) or "(no manifest files found)"
 
     return f"""
-You are running in CI mode. Skip all confirmation prompts and apply all changes directly.
-
-Here is the full project context:
-
 <readme>
 {ctx['readme']}
 </readme>
@@ -214,26 +195,88 @@ Here is the full project context:
 <directory_structure>
 {ctx['dir_tree']}
 </directory_structure>
-
-Instructions:
-1. Print the change report to stdout (visible in CI logs).
-2. Then output the full updated README wrapped in <readme_output> tags:
-
-<readme_output>
-...full README content...
-</readme_output>
-
-Do not include anything after the closing </readme_output> tag.
 """.strip()
 
 
-# ── Response parsing ──────────────────────────────────────────────────────────
-def extract_readme(text: str) -> str | None:
-    start = text.find("<readme_output>")
-    end   = text.find("</readme_output>")
-    if start == -1 or end == -1:
-        return None
-    return text[start + len("<readme_output>"):end].strip()
+# ── Call 1: change report ─────────────────────────────────────────────────────
+def call_analyse(client, system: str, ctx: dict) -> str:
+    print("[readme-updater] Call 1/2 — analysing changes...")
+
+    prompt = f"""
+Analyse the project context below and produce ONLY a change report.
+Do NOT write any README content yet. Do NOT include any other text.
+
+{build_context_block(ctx)}
+
+Output format — use exactly this structure:
+
+## README Change Report
+
+### ✅ Still accurate
+- <sections that need no changes>
+
+### ⚠️ Needs update
+| Section | Current content | What changed | Recommended update |
+|---------|----------------|--------------|-------------------|
+
+### ➕ Missing (not documented yet)
+- <new features, commands, env vars present in code but absent from README>
+
+### 🗑️ Stale (no longer applies)
+- <sections referencing removed files, commands, or behaviour>
+
+### 📦 Dependency changes
+- Added / Removed / Upgraded: ...
+
+If the README needs no changes, output only: "README is up-to-date. No changes needed."
+""".strip()
+
+    response = client.messages.create(
+        model=MODEL,
+        max_tokens=2000,
+        system=system,
+        messages=[{"role": "user", "content": prompt}],
+    )
+    return response.content[0].text.strip()
+
+
+# ── Call 2: write updated README ──────────────────────────────────────────────
+def call_write(client, system: str, ctx: dict, report: str) -> str:
+    print("[readme-updater] Call 2/2 — writing updated README...")
+
+    prompt = f"""
+You have already analysed the project and produced this change report:
+
+<change_report>
+{report}
+</change_report>
+
+Now apply every change listed in the report to the README below.
+
+Rules:
+- Preserve the original section order and headings.
+- Do not fabricate anything not found in the report or context.
+- Match the existing tone and formatting style exactly.
+- Update version badges only when a version change was confirmed.
+- Never add or remove screenshots.
+- If a Changelog section exists, prepend new entries; never rewrite history.
+
+Current README for reference:
+<readme>
+{ctx['readme']}
+</readme>
+
+Output ONLY the complete updated README.md content.
+No preamble, no explanation, no code fences — just the raw markdown.
+""".strip()
+
+    response = client.messages.create(
+        model=MODEL,
+        max_tokens=MAX_TOKENS,
+        system=system,
+        messages=[{"role": "user", "content": prompt}],
+    )
+    return response.content[0].text.strip()
 
 
 # ── Git / PR helpers ──────────────────────────────────────────────────────────
@@ -244,7 +287,11 @@ def push_pr_branch(last_sha: str) -> None:
 
     run(f"git checkout -b {branch}")
     run("git add README.md")
-    run(f'git commit -m "docs: update README to reflect changes since {short_sha}\n\nAuto-generated by readme-updater."')
+    run(
+        f'git commit -m '
+        f'"docs: update README to reflect changes since {short_sha}\n\n'
+        f'Auto-generated by readme-updater."'
+    )
     run(f"git push origin {branch}")
     print(f"[readme-updater] Branch pushed: {branch}")
 
@@ -264,40 +311,30 @@ def push_pr_branch(last_sha: str) -> None:
 
 # ── Main ──────────────────────────────────────────────────────────────────────
 def main() -> None:
-    # Load skill as system prompt, stripping YAML frontmatter
     raw = read_file(SKILL_PATH)
     if not raw:
         print(f"[readme-updater] ERROR: skill not found at {SKILL_PATH}", file=sys.stderr)
         sys.exit(1)
 
-    if raw.startswith("---"):
-        end = raw.find("---", 3)
-        system = raw[end + 3:].strip()
-    else:
-        system = raw
+    # Strip YAML frontmatter
+    system = raw[raw.find("---", 3) + 3:].strip() if raw.startswith("---") else raw
 
-    ctx = gather_context()
+    ctx    = gather_context()
+    client = anthropic.Anthropic()
 
-    print("[readme-updater] Calling Anthropic API...")
-    client   = anthropic.Anthropic()  # reads ANTHROPIC_API_KEY from env
-    response = client.messages.create(
-        model=MODEL,
-        max_tokens=MAX_TOKENS,
-        system=system,
-        messages=[{"role": "user", "content": build_user_message(ctx)}],
-    )
+    # ── Call 1: analyse ───────────────────────────────────────────────────────
+    report = call_analyse(client, system, ctx)
+    print("\n" + report + "\n")
 
-    text = response.content[0].text
+    if "no changes needed" in report.lower():
+        print("[readme-updater] README is already up-to-date. Nothing to do.")
+        sys.exit(0)
 
-    # Print the change report (everything before <readme_output>)
-    report_end = text.find("<readme_output>")
-    if report_end > 0:
-        print("\n" + text[:report_end].strip() + "\n")
+    # ── Call 2: write ─────────────────────────────────────────────────────────
+    new_readme = call_write(client, system, ctx, report)
 
-    new_readme = extract_readme(text)
     if not new_readme:
-        print("[readme-updater] ERROR: no <readme_output> found in response.", file=sys.stderr)
-        print(text, file=sys.stderr)
+        print("[readme-updater] ERROR: empty response from write call.", file=sys.stderr)
         sys.exit(1)
 
     if new_readme.strip() == read_file(README_PATH).strip():
