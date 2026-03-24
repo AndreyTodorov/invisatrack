@@ -1,3 +1,10 @@
+## [1.19.1](https://github.com/AndreyTodorov/invisatrack/compare/v1.19.0...v1.19.1) (2026-03-24)
+
+
+### Bug Fixes
+
+* correct file structure ([b5faf1e](https://github.com/AndreyTodorov/invisatrack/commit/b5faf1e0f2cf27042308153c86dc4526a5c3cd2c))
+
 # [1.19.0](https://github.com/AndreyTodorov/invisatrack/compare/v1.18.0...v1.19.0) (2026-03-24)
 
 
