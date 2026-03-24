@@ -1,3 +1,20 @@
+# [1.18.0](https://github.com/AndreyTodorov/invisatrack/compare/v1.17.4...v1.18.0) (2026-03-24)
+
+
+### Bug Fixes
+
+* **themes:** make bottom nav and card text theme-aware ([7eceb16](https://github.com/AndreyTodorov/invisatrack/commit/7eceb16824b5a98fb4b3a2e9ddcb1a5a09f145f7))
+* **themes:** replace hardcoded border-radius and colors with CSS tokens ([12eaeb8](https://github.com/AndreyTodorov/invisatrack/commit/12eaeb8f5b63027515e0ffa6908e0b1235427403)), closes [#00D8FF](https://github.com/AndreyTodorov/invisatrack/issues/00D8FF) [#FF4444](https://github.com/AndreyTodorov/invisatrack/issues/FF4444) [#FFC200](https://github.com/AndreyTodorov/invisatrack/issues/FFC200) [#00E676](https://github.com/AndreyTodorov/invisatrack/issues/00E676) [#FF2020](https://github.com/AndreyTodorov/invisatrack/issues/FF2020) [#FF9500](https://github.com/AndreyTodorov/invisatrack/issues/FF9500)
+* **themes:** revert preview theme when navigating away from Settings ([4ed4b8b](https://github.com/AndreyTodorov/invisatrack/commit/4ed4b8b3a1b54f0f04c3828ebf1942565b2354a6))
+* **themes:** wire CSS tokens into Reports page components ([6bd931e](https://github.com/AndreyTodorov/invisatrack/commit/6bd931e61fcc6c7d0582a0608ae756b7453bd95a))
+
+
+### Features
+
+* **themes:** add Neobrutalism theme, rename previous to Light ([c7be3a1](https://github.com/AndreyTodorov/invisatrack/commit/c7be3a19b64d5235dfcc5d87740704150cc2f0b0)), closes [#FFD400](https://github.com/AndreyTodorov/invisatrack/issues/FFD400)
+* **themes:** implement phase 3 — appearance settings UI ([fbe53a6](https://github.com/AndreyTodorov/invisatrack/commit/fbe53a6a700225a376acca5ea809836e559e042c))
+* **themes:** phases 1 & 2 — theme definitions, CSS variables, and ThemeContext ([60890c8](https://github.com/AndreyTodorov/invisatrack/commit/60890c871ed6075a2e96465114e81f8fbfaf3666))
+
 ## [1.17.4](https://github.com/AndreyTodorov/invisatrack/compare/v1.17.3...v1.17.4) (2026-03-23)
 
 
