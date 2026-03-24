@@ -18,8 +18,26 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  deploy:
+  check-release:
     if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    outputs:
+      has-release: ${{ steps.check.outputs.has-release }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Check if new tag on HEAD
+        id: check
+        run: |
+          COMMIT_TAG=$(git tag --points-at HEAD | head -1)
+          echo "has-release=$([[ -n "$COMMIT_TAG" ]] && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
+
+  deploy:
+    needs: check-release
+    if: ${{ needs.check-release.outputs.has-release == 'true' || github.event_name == 'workflow_dispatch' }}
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -35,7 +53,7 @@ jobs:
 
       - name: Cache node_modules
         id: cache-node-modules
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: node_modules
           key: ${{ runner.os }}-node-modules-${{ hashFiles('package-lock.json') }}
