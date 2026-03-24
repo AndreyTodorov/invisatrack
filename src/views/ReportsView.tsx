@@ -30,11 +30,11 @@ function BestWorstCallout({ stats, todayStr }: { stats: DailyStats[], todayStr: 
     <div style={{ display: 'flex', gap: 8 }}>
       <div style={{
         flex: 1,
-        background: 'rgba(74,222,128,0.07)',
-        border: '1px solid rgba(74,222,128,0.2)',
-        borderRadius: 14, padding: '12px 14px',
+        background: 'rgba(0,230,118,0.07)',
+        border: 'var(--border-width) solid rgba(0,230,118,0.2)',
+        borderRadius: 'var(--radius-card)', boxShadow: 'var(--card-shadow)', padding: '12px 14px',
       }}>
-        <div style={{ fontSize: 8, color: 'rgba(74,222,128,0.6)', fontWeight: 500, letterSpacing: '0.04em', textTransform: 'uppercase', marginBottom: 4 }}>
+        <div style={{ fontSize: 8, color: 'rgba(0,230,118,0.6)', fontWeight: 500, letterSpacing: '0.04em', textTransform: 'uppercase', marginBottom: 4 }}>
           Best Day
         </div>
         <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--green)', fontFamily: "'JetBrains Mono', monospace" }}>
@@ -46,11 +46,11 @@ function BestWorstCallout({ stats, todayStr }: { stats: DailyStats[], todayStr: 
       </div>
       <div style={{
         flex: 1,
-        background: 'rgba(248,113,113,0.07)',
-        border: '1px solid rgba(248,113,113,0.2)',
-        borderRadius: 14, padding: '12px 14px',
+        background: 'rgba(255,68,68,0.07)',
+        border: 'var(--border-width) solid rgba(255,68,68,0.2)',
+        borderRadius: 'var(--radius-card)', boxShadow: 'var(--card-shadow)', padding: '12px 14px',
       }}>
-        <div style={{ fontSize: 8, color: 'rgba(248,113,113,0.6)', fontWeight: 500, letterSpacing: '0.04em', textTransform: 'uppercase', marginBottom: 4 }}>
+        <div style={{ fontSize: 8, color: 'rgba(255,68,68,0.6)', fontWeight: 500, letterSpacing: '0.04em', textTransform: 'uppercase', marginBottom: 4 }}>
           Worst Day
         </div>
         <div style={{ fontSize: 18, fontWeight: 700, color: worst.compliant ? 'var(--text)' : 'var(--rose)', fontFamily: "'JetBrains Mono', monospace" }}>
@@ -238,8 +238,8 @@ export default function ReportsView() {
       <div style={{
         display: 'flex', gap: 4,
         background: 'var(--surface)',
-        border: '1px solid var(--border)',
-        borderRadius: 14, padding: 4,
+        border: 'var(--border-width) solid var(--border)',
+        borderRadius: 'var(--radius-card)', boxShadow: 'var(--card-shadow)', padding: 4,
       }}>
         {tabs.map(t => (
           <button
@@ -247,7 +247,7 @@ export default function ReportsView() {
             onClick={() => handleSetPeriod(t.key)}
             style={{
               flex: 1, padding: '8px 0',
-              borderRadius: 10, border: 'none',
+              borderRadius: 'var(--radius-btn)', border: 'none',
               fontSize: 13, fontWeight: 500,
               fontFamily: 'inherit', cursor: 'pointer',
               transition: 'background 0.2s, color 0.2s',

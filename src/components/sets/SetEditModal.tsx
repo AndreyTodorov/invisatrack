@@ -25,7 +25,7 @@ const labelStyle: React.CSSProperties = {
 }
 
 const btnBase: React.CSSProperties = {
-  flex: 1, border: 'none', borderRadius: 12,
+  flex: 1, border: 'none', borderRadius: 'var(--radius-btn)',
   padding: '13px 0', fontSize: 14, fontWeight: 600,
   fontFamily: 'inherit', cursor: 'pointer',
 }
@@ -200,8 +200,8 @@ export default function SetEditModal({ set, stats, isCurrent, prevSet, nextSet, 
           {isCurrent && (
             <span style={{
               fontSize: 11, fontWeight: 600, color: 'var(--cyan)',
-              background: 'var(--cyan-bg)', border: '1px solid rgba(34,211,238,0.2)',
-              borderRadius: 20, padding: '3px 10px',
+              background: 'var(--cyan-bg)', border: 'var(--border-width) solid rgba(0,216,255,0.2)',
+              borderRadius: 'var(--radius-badge)', padding: '3px 10px',
             }}>
               Current
             </span>
@@ -219,8 +219,8 @@ export default function SetEditModal({ set, stats, isCurrent, prevSet, nextSet, 
             { label: 'Per Day', value: stats.avgRemovalsPerDay > 0 ? stats.avgRemovalsPerDay.toFixed(1) : '—', color: 'var(--text)' },
           ].map(({ label, value, color }) => (
             <div key={label} style={{
-              background: 'var(--surface-2)', border: '1px solid var(--border)',
-              borderRadius: 12, padding: '10px 8px', textAlign: 'center',
+              background: 'var(--surface-2)', border: 'var(--border-width) solid var(--border)',
+              borderRadius: 'var(--radius-card)', padding: '10px 8px', textAlign: 'center',
             }}>
               <div style={{ fontSize: 15, fontWeight: 600, color, lineHeight: 1, marginBottom: 4, fontFamily: "'JetBrains Mono', monospace" }}>{value}</div>
               <div style={{ fontSize: 10, color: 'var(--text-muted)', letterSpacing: '0.04em' }}>{label}</div>
@@ -231,8 +231,8 @@ export default function SetEditModal({ set, stats, isCurrent, prevSet, nextSet, 
         {error && (
           <p style={{
             fontSize: 13, color: 'var(--rose)',
-            background: 'var(--rose-bg)', border: '1px solid rgba(248,113,113,0.2)',
-            borderRadius: 10, padding: '10px 14px', margin: 0,
+            background: 'var(--rose-bg)', border: 'var(--border-width) solid rgba(255,68,68,0.2)',
+            borderRadius: 'var(--radius-card)', padding: '10px 14px', margin: 0,
           }}>{error}</p>
         )}
 
@@ -309,7 +309,7 @@ export default function SetEditModal({ set, stats, isCurrent, prevSet, nextSet, 
                   ...btnBase, flex: 1,
                   background: hasChanges ? 'var(--surface-3)' : 'transparent',
                   color: hasChanges ? 'var(--text-muted)' : 'var(--text-faint)',
-                  border: hasChanges ? '1px solid var(--border)' : '1px solid transparent',
+                  border: hasChanges ? 'var(--border-width) solid var(--border)' : 'var(--border-width) solid transparent',
                   cursor: hasChanges ? 'pointer' : 'default',
                 }}
               >
@@ -323,7 +323,7 @@ export default function SetEditModal({ set, stats, isCurrent, prevSet, nextSet, 
                   flex: 2,
                   background: canSave ? 'var(--cyan)' : 'var(--surface-3)',
                   color: canSave ? '#06090f' : 'var(--text-faint)',
-                  border: canSave ? 'none' : '1px solid var(--border)',
+                  border: canSave ? 'none' : 'var(--border-width) solid var(--border)',
                   cursor: canSave ? 'pointer' : 'default',
                 }}
               >
@@ -347,8 +347,8 @@ export default function SetEditModal({ set, stats, isCurrent, prevSet, nextSet, 
         {view === 'confirmDelete' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             <div style={{
-              background: 'var(--rose-bg)', border: '1px solid rgba(248,113,113,0.25)',
-              borderRadius: 12, padding: 16, textAlign: 'center',
+              background: 'var(--rose-bg)', border: 'var(--border-width) solid rgba(255,68,68,0.25)',
+              borderRadius: 'var(--radius-card)', padding: 16, textAlign: 'center',
             }}>
               <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--rose)', margin: '0 0 6px' }}>
                 Delete Set {set.setNumber}?
@@ -362,7 +362,7 @@ export default function SetEditModal({ set, stats, isCurrent, prevSet, nextSet, 
             <div style={{ display: 'flex', gap: 10 }}>
               <button
                 onClick={() => setView('edit')}
-                style={{ ...btnBase, background: 'var(--surface-3)', color: 'var(--text-muted)', border: '1px solid var(--border)' }}
+                style={{ ...btnBase, background: 'var(--surface-3)', color: 'var(--text-muted)', border: 'var(--border-width) solid var(--border)' }}
               >
                 Cancel
               </button>
@@ -396,8 +396,8 @@ export default function SetEditModal({ set, stats, isCurrent, prevSet, nextSet, 
                     key={s.id}
                     onClick={() => handlePickCurrent(s)}
                     style={{
-                      background: 'var(--surface-2)', border: '1px solid var(--border)',
-                      borderRadius: 12, padding: '14px 16px', textAlign: 'left',
+                      background: 'var(--surface-2)', border: 'var(--border-width) solid var(--border)',
+                      borderRadius: 'var(--radius-card)', padding: '14px 16px', textAlign: 'left',
                       fontFamily: 'inherit', cursor: 'pointer', width: '100%',
                     }}
                   >

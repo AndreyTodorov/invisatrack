@@ -14,8 +14,8 @@ export default function LoginView() {
         <div style={{
           width: 64, height: 64,
           background: 'var(--cyan-bg)',
-          border: '1px solid rgba(34,211,238,0.25)',
-          borderRadius: 20,
+          border: 'var(--border-width) solid rgba(0,216,255,0.25)',
+          borderRadius: 'var(--radius-card)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           margin: '0 auto 20px',
           fontSize: 28,
@@ -38,8 +38,8 @@ export default function LoginView() {
         style={{
           display: 'flex', alignItems: 'center', gap: 10,
           background: 'var(--surface)',
-          border: '1px solid var(--border-strong)',
-          borderRadius: 14, padding: '14px 24px',
+          border: 'var(--border-width) solid var(--border-strong)',
+          borderRadius: 'var(--radius-btn)', padding: '14px 24px',
           fontSize: 15, fontWeight: 500, color: 'var(--text)',
           fontFamily: 'inherit', cursor: 'pointer',
           transition: 'border-color 0.2s',
@@ -68,7 +68,7 @@ export default function LoginView() {
           }}
           style={{
             background: 'none', border: '1px dashed var(--border)',
-            borderRadius: 14, padding: '10px 20px',
+            borderRadius: 'var(--radius-btn)', padding: '10px 20px',
             fontSize: 13, color: 'var(--text-muted)',
             fontFamily: 'inherit', cursor: 'pointer',
           }}

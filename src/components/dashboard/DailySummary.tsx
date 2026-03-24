@@ -74,7 +74,7 @@ export default function DailySummary({ totalOffMinutes, removals, goalMinutes, s
 
   const segmentColor: Record<SegmentType, string> = {
     wearing: 'var(--green)',
-    off: 'rgba(248,113,113,0.55)',
+    off: 'rgba(255,68,68,0.55)',
     future: 'rgba(255,255,255,0.04)',
   }
 
@@ -97,8 +97,9 @@ export default function DailySummary({ totalOffMinutes, removals, goalMinutes, s
   return (
     <div style={{
       background: 'var(--surface)',
-      border: '1px solid var(--border)',
-      borderRadius: 20,
+      border: 'var(--border-width) solid var(--border)',
+      borderRadius: 'var(--radius-card)',
+      boxShadow: 'var(--card-shadow)',
       padding: '16px 18px',
     }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
@@ -117,14 +118,14 @@ export default function DailySummary({ totalOffMinutes, removals, goalMinutes, s
           <span style={{
             fontSize: 10, fontWeight: 600, letterSpacing: '0.04em',
             color: pacePct >= 95 ? 'var(--green)' : 'var(--amber)',
-            background: pacePct >= 95 ? 'rgba(74,222,128,0.08)' : 'rgba(251,191,36,0.08)',
-            border: `1px solid ${pacePct >= 95 ? 'rgba(74,222,128,0.2)' : 'rgba(251,191,36,0.2)'}`,
-            borderRadius: 20, padding: '2px 8px',
+            background: pacePct >= 95 ? 'rgba(0,230,118,0.08)' : 'rgba(251,191,36,0.08)',
+            border: `var(--border-width) solid ${pacePct >= 95 ? 'rgba(0,230,118,0.2)' : 'rgba(251,191,36,0.2)'}`,
+            borderRadius: 'var(--radius-badge)', padding: '2px 8px',
           }}>
             {pacePct >= 95 ? 'On track' : 'Below goal'}
           </span>
         </div>
-        <div style={{ width: '100%', height: 18, borderRadius: 9, overflow: 'hidden', position: 'relative', background: 'rgba(255,255,255,0.04)' }}>
+        <div style={{ width: '100%', height: 18, borderRadius: 'var(--radius-card)', overflow: 'hidden', position: 'relative', background: 'rgba(255,255,255,0.04)' }}>
           {segments.map((seg, i) => (
             <div
               key={i}
@@ -206,7 +207,7 @@ export default function DailySummary({ totalOffMinutes, removals, goalMinutes, s
         <div style={{ display: 'flex', gap: 14, marginTop: 4 }}>
           {([
             { bg: 'var(--green)',                label: 'Wearing' },
-            { bg: 'rgba(248,113,113,0.55)',      label: 'Off' },
+            { bg: 'rgba(255,68,68,0.55)',      label: 'Off' },
             { bg: 'rgba(255,255,255,0.12)',      label: 'Rest of day' },
           ] as const).map(({ bg, label }) => (
             <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
@@ -224,8 +225,8 @@ export default function DailySummary({ totalOffMinutes, removals, goalMinutes, s
             key={label}
             style={{
               background: 'var(--surface-2)',
-              border: '1px solid var(--border)',
-              borderRadius: 14,
+              border: 'var(--border-width) solid var(--border)',
+              borderRadius: 'var(--radius-card)',
               padding: '12px 8px',
               textAlign: 'center',
             }}

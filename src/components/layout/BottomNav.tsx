@@ -49,10 +49,10 @@ export default function BottomNav() {
   return (
     <nav style={{
       position: 'fixed', bottom: 0, left: 0, right: 0,
-      background: 'rgba(6, 9, 19, 0.92)',
+      background: 'color-mix(in srgb, var(--bg) 92%, transparent)',
       backdropFilter: 'blur(24px)',
       WebkitBackdropFilter: 'blur(24px)',
-      borderTop: '1px solid var(--border)',
+      borderTop: 'var(--border-width) solid var(--border)',
       display: 'flex',
       paddingBottom: 'env(safe-area-inset-bottom)',
       zIndex: 50,

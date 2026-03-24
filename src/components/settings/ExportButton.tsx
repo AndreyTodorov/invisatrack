@@ -16,8 +16,8 @@ export default function ExportButton() {
         width: '100%',
         background: 'var(--surface)',
         color: 'var(--text-muted)',
-        border: '1px solid var(--border)',
-        borderRadius: 12, padding: '13px 0',
+        border: 'var(--border-width) solid var(--border)',
+        borderRadius: 'var(--radius-btn)', padding: '13px 0',
         fontSize: 14, fontWeight: 600,
         fontFamily: 'inherit', cursor: 'pointer',
       }}

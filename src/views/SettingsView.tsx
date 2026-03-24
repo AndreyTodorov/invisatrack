@@ -1,11 +1,13 @@
 import { useState, useEffect, useRef } from 'react'
 import { useAuthContext } from '../contexts/AuthContext'
 import { useDataContext } from '../contexts/DataContext'
+import { useTheme } from '../contexts/ThemeContext'
 import { useSets } from '../hooks/useSets'
 import ExportButton from '../components/settings/ExportButton'
 import { update, ref, db } from '../services/firebase'
 import { localDB } from '../services/db'
 import { addDays, dateDiffDays } from '../utils/time'
+import { THEMES } from '../themes'
 import {
   DEFAULT_DAILY_WEAR_GOAL_MINUTES,
   DEFAULT_REMINDER_THRESHOLD_MINUTES,
@@ -19,8 +21,8 @@ function ProfileCard({ user, onSignOut }: { user: import('firebase/auth').User; 
 
   return (
     <div style={{
-      background: 'var(--surface)', border: '1px solid var(--border)',
-      borderRadius: 18, padding: '16px 18px',
+      background: 'var(--surface)', border: 'var(--border-width) solid var(--border)',
+      borderRadius: 'var(--radius-card)', boxShadow: 'var(--card-shadow)', padding: '16px 18px',
       display: 'flex', alignItems: 'center', gap: 14,
     }}>
       {user.photoURL
@@ -52,7 +54,7 @@ function ProfileCard({ user, onSignOut }: { user: import('firebase/auth').User; 
               onClick={onSignOut}
               style={{
                 background: 'var(--rose-bg)', color: 'var(--rose)',
-                border: '1px solid rgba(248,113,113,0.25)', borderRadius: 8,
+                border: 'var(--border-width) solid rgba(255,68,68,0.25)', borderRadius: 'var(--radius-btn)',
                 padding: '6px 12px', fontSize: 12, fontWeight: 600,
                 fontFamily: 'inherit', cursor: 'pointer', whiteSpace: 'nowrap',
               }}
@@ -63,7 +65,7 @@ function ProfileCard({ user, onSignOut }: { user: import('firebase/auth').User; 
               onClick={() => setConfirming(false)}
               style={{
                 background: 'var(--surface-3)', color: 'var(--text-muted)',
-                border: '1px solid var(--border)', borderRadius: 8,
+                border: 'var(--border-width) solid var(--border)', borderRadius: 'var(--radius-btn)',
                 padding: '6px 12px', fontSize: 12, fontWeight: 600,
                 fontFamily: 'inherit', cursor: 'pointer',
               }}
@@ -75,7 +77,7 @@ function ProfileCard({ user, onSignOut }: { user: import('firebase/auth').User; 
             onClick={() => setConfirming(true)}
             style={{
               flexShrink: 0, background: 'none', color: 'var(--rose)',
-              border: '1px solid rgba(248,113,113,0.2)', borderRadius: 8,
+              border: 'var(--border-width) solid rgba(255,68,68,0.2)', borderRadius: 'var(--radius-btn)',
               padding: '6px 12px', fontSize: 12, fontWeight: 500,
               fontFamily: 'inherit', cursor: 'pointer', whiteSpace: 'nowrap',
             }}
@@ -87,10 +89,10 @@ function ProfileCard({ user, onSignOut }: { user: import('firebase/auth').User; 
   )
 }
 
-type Section = 'wear' | 'treatment' | 'data'
+type Section = 'wear' | 'treatment' | 'data' | 'appearance'
 
 const rowCard: React.CSSProperties = {
-  background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 18, padding: '4px 0',
+  background: 'var(--surface)', border: 'var(--border-width) solid var(--border)', borderRadius: 'var(--radius-card)', padding: '4px 0', boxShadow: 'var(--card-shadow)',
 }
 const rowDivider = <div style={{ height: 1, background: 'var(--border)', margin: '0 18px' }} />
 const rowStyle: React.CSSProperties = {
@@ -98,8 +100,8 @@ const rowStyle: React.CSSProperties = {
 }
 const rowLabel: React.CSSProperties = { fontSize: 14, color: 'var(--text-muted)', flex: 1 }
 const compactInput: React.CSSProperties = {
-  width: 56, background: 'var(--surface-3)', border: '1px solid var(--border-strong)',
-  borderRadius: 8, color: 'var(--text)', fontFamily: 'inherit', fontSize: 14, fontWeight: 600,
+  width: 56, background: 'var(--surface-3)', border: 'var(--border-width) solid var(--border-strong)',
+  borderRadius: 'var(--radius-btn)', color: 'var(--text)', fontFamily: 'inherit', fontSize: 14, fontWeight: 600,
   padding: '6px 8px', textAlign: 'center', outline: 'none',
 }
 const unit: React.CSSProperties = { fontSize: 12, color: 'var(--text-muted)' }
@@ -117,7 +119,7 @@ function NavRow({ icon, iconBg, title, summary, onClick }: {
       }}
     >
       <div style={{
-        width: 34, height: 34, borderRadius: 9, background: iconBg, flexShrink: 0,
+        width: 34, height: 34, borderRadius: 'var(--radius-btn)', background: iconBg, flexShrink: 0,
         display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16,
       }}>
         {icon}
@@ -172,8 +174,8 @@ function SaveButton({
         disabled={isDisabled}
         style={{
           width: '100%', background: bg, color: textColor,
-          border: isDisabled ? '1px solid var(--border)' : 'none',
-          borderRadius: 12, padding: '13px 0',
+          border: isDisabled ? 'var(--border-width) solid var(--border)' : 'none',
+          borderRadius: 'var(--radius-btn)', padding: '13px 0',
           fontSize: 14, fontWeight: 700, fontFamily: 'inherit',
           cursor: isDisabled ? 'default' : 'pointer',
           letterSpacing: '0.02em',
@@ -198,7 +200,15 @@ function FieldError({ message }: { message?: string }) {
 export default function SettingsPageView() {
   const { user, signOut } = useAuthContext()
   const { profile, treatment, sets } = useDataContext()
+  const { savedThemeId, previewThemeId, setPreviewThemeId } = useTheme()
   const { updateTreatment, updateSet } = useSets()
+
+  // Revert live preview when navigating away from Settings via the bottom nav.
+  // Refs capture the latest values so the cleanup closure is never stale.
+  const savedThemeIdCleanupRef = useRef(savedThemeId)
+  useEffect(() => { savedThemeIdCleanupRef.current = savedThemeId }, [savedThemeId])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => () => { setPreviewThemeId(savedThemeIdCleanupRef.current) }, [])
 
   const [activeSection, setActiveSection] = useState<Section | null>(null)
   const [navDir, setNavDir] = useState<'push' | 'pop'>('push')
@@ -228,6 +238,7 @@ export default function SettingsPageView() {
 
   const [profileSaveState, setProfileSaveState] = useState<SaveState>('idle')
   const [treatmentSaveState, setTreatmentSaveState] = useState<SaveState>('idle')
+  const [appearanceSaveState, setAppearanceSaveState] = useState<SaveState>('idle')
 
   const [touched, setTouched] = useState({
     goalHours: false, goalMins: false, reminderMins: false, autoCapMins: false, defaultDuration: false,
@@ -241,7 +252,7 @@ export default function SettingsPageView() {
   const [setDurationSaveState, setSetDurationSaveState] = useState<SaveState>('idle')
 
   useEffect(() => {
-    /* eslint-disable react-hooks/set-state-in-effect */
+     
     if (profile) {
       const h = Math.floor(profile.dailyWearGoalMinutes / 60)
       const m = profile.dailyWearGoalMinutes % 60
@@ -266,7 +277,7 @@ export default function SettingsPageView() {
       setSetDurationOverride(overrideStr)
       setSetDurationOverrideInit(overrideStr)
     }
-    /* eslint-enable react-hooks/set-state-in-effect */
+     
   }, [profile, treatment, sets])
 
   // Dirty detection
@@ -362,6 +373,25 @@ export default function SettingsPageView() {
     }
   }
 
+  const saveAppearance = async () => {
+    if (!user) return
+    setAppearanceSaveState('saving')
+    try {
+      const themeUpdate = { theme: previewThemeId }
+      await update(ref(db, `users/${user.uid}/profile`), themeUpdate)
+      const updated = await localDB.profile.update(user.uid, themeUpdate)
+      if (updated === 0 && profile) {
+        await localDB.profile.put({ uid: user.uid, ...profile, ...themeUpdate })
+      }
+      localStorage.setItem('theme', previewThemeId)
+      setAppearanceSaveState('saved')
+      setTimeout(() => setAppearanceSaveState('idle'), 2000)
+    } catch {
+      setAppearanceSaveState('error')
+      setTimeout(() => setAppearanceSaveState('idle'), 3000)
+    }
+  }
+
   // Swipe-right-to-go-back (edge swipe, like iOS)
   const touchStartX = useRef<number>(0)
   const touchStartY = useRef<number>(0)
@@ -372,11 +402,15 @@ export default function SettingsPageView() {
   const handleTouchEnd = (e: React.TouchEvent) => {
     const dx = e.changedTouches[0].clientX - touchStartX.current
     const dy = Math.abs(e.changedTouches[0].clientY - touchStartY.current)
-    if (touchStartX.current < 40 && dx > 60 && dx > dy) navigateTo(null, 'pop')
+    if (touchStartX.current < 40 && dx > 60 && dx > dy) {
+      if (activeSection === 'appearance') setPreviewThemeId(savedThemeId)
+      navigateTo(null, 'pop')
+    }
   }
 
   // Summaries shown in nav list rows
   const wearSummary = `${goalHours}h ${goalMins}m · ${reminderMins}min reminder`
+  const appearanceSummary = THEMES.find(t => t.id === savedThemeId)?.name ?? 'Obsidian'
   const treatmentSummary = treatment
     ? `Set ${treatment.currentSetNumber}${treatment.totalSets ? ` of ${treatment.totalSets}` : ''} · ${defaultDuration}d cycles`
     : 'Not configured'
@@ -428,17 +462,23 @@ export default function SettingsPageView() {
 
         {user && <ProfileCard user={user} onSignOut={signOut} />}
 
-        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 18, padding: '4px 0' }}>
+        <div style={{ background: 'var(--surface)', border: 'var(--border-width) solid var(--border)', borderRadius: 'var(--radius-card)', boxShadow: 'var(--card-shadow)', padding: '4px 0' }}>
           <NavRow
-            icon="⏱" iconBg="rgba(34,211,238,0.12)"
+            icon="⏱" iconBg="rgba(0,216,255,0.12)"
             title="Wear Goal" summary={wearSummary}
             onClick={() => navigateTo('wear', 'push')}
           />
           <div style={{ height: 1, background: 'var(--border)', margin: '0 18px' }} />
           <NavRow
-            icon="🦷" iconBg="rgba(74,222,128,0.1)"
+            icon="🦷" iconBg="rgba(0,230,118,0.1)"
             title="Treatment Plan" summary={treatmentSummary}
             onClick={() => navigateTo('treatment', 'push')}
+          />
+          <div style={{ height: 1, background: 'var(--border)', margin: '0 18px' }} />
+          <NavRow
+            icon="🎨" iconBg="rgba(168,85,247,0.1)"
+            title="Appearance" summary={appearanceSummary}
+            onClick={() => navigateTo('appearance', 'push')}
           />
           <div style={{ height: 1, background: 'var(--border)', margin: '0 18px' }} />
           <NavRow
@@ -609,6 +649,71 @@ export default function SettingsPageView() {
         {back}
         <h1 style={{ fontSize: 20, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.01em' }}>Data & Export</h1>
         <ExportButton />
+      </>}
+
+      {/* ── APPEARANCE DETAIL ── */}
+      {activeSection === 'appearance' && <>
+        <button
+          onClick={() => { setPreviewThemeId(savedThemeId); navigateTo(null, 'pop') }}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 6,
+            background: 'none', border: 'none', color: 'var(--cyan)',
+            fontFamily: 'inherit', fontSize: 16, fontWeight: 600,
+            cursor: 'pointer', padding: 'max(env(safe-area-inset-top), 28px) 0 8px',
+            minHeight: 44,
+          }}
+        >
+          <svg width="9" height="15" viewBox="0 0 7 12" fill="none">
+            <path d="M6 1L1 6l5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+          Settings
+        </button>
+        <h1 style={{ fontSize: 20, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.01em' }}>Appearance</h1>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          {THEMES.map(theme => {
+            const [bg, accent, textColor] = theme.swatchColors
+            const isSelected = previewThemeId === theme.id
+            return (
+              <button
+                key={theme.id}
+                onClick={() => setPreviewThemeId(theme.id)}
+                style={{
+                  background: bg, border: `var(--border-width) solid ${isSelected ? 'var(--cyan)' : 'var(--border)'}`,
+                  borderRadius: 'var(--radius-card)', padding: 0, cursor: 'pointer', overflow: 'hidden',
+                  fontFamily: 'inherit', outline: isSelected ? '2px solid var(--cyan)' : 'none',
+                  outlineOffset: 2, position: 'relative',
+                }}
+              >
+                {/* 3-color swatch strip */}
+                <div style={{ display: 'flex', height: 40 }}>
+                  <div style={{ flex: 1, background: bg }} />
+                  <div style={{ flex: 1, background: accent }} />
+                  <div style={{ flex: 1, background: textColor }} />
+                </div>
+                <div style={{ padding: '8px 12px 10px', textAlign: 'left' }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: textColor }}>{theme.name}</div>
+                </div>
+                {isSelected && (
+                  <div style={{
+                    position: 'absolute', top: 6, right: 6,
+                    width: 20, height: 20, borderRadius: '50%',
+                    background: 'var(--cyan)', color: '#06090f',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: 11, fontWeight: 700,
+                  }}>✓</div>
+                )}
+              </button>
+            )
+          })}
+        </div>
+
+        <SaveButton
+          state={appearanceSaveState}
+          dirty={previewThemeId !== savedThemeId}
+          idleLabel="Save Appearance"
+          onClick={saveAppearance}
+        />
       </>}
 
       </div>

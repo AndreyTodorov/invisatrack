@@ -40,9 +40,9 @@ export default function SessionList({ sessions, onEdit, activeSession, activeEla
       {activeSession && (
         <div style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          background: 'rgba(34,211,238,0.05)',
-          border: '1px solid rgba(34,211,238,0.2)',
-          borderRadius: 14, padding: '12px 16px',
+          background: 'rgba(0,216,255,0.05)',
+          border: 'var(--border-width) solid rgba(0,216,255,0.2)',
+          borderRadius: 'var(--radius-card)', padding: '12px 16px',
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <div style={{
@@ -72,8 +72,8 @@ export default function SessionList({ sessions, onEdit, activeSession, activeEla
               width: '100%',
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
               background: 'var(--surface)',
-              border: '1px solid var(--border)',
-              borderRadius: 14,
+              border: 'var(--border-width) solid var(--border)',
+              borderRadius: 'var(--radius-card)',
               padding: '12px 16px',
               cursor: 'pointer',
               transition: 'background 0.15s, border-color 0.15s',
@@ -99,8 +99,8 @@ export default function SessionList({ sessions, onEdit, activeSession, activeEla
                 <span style={{
                   fontSize: 10, color: 'var(--amber)',
                   background: 'var(--amber-bg)',
-                  border: '1px solid rgba(252,211,77,0.2)',
-                  borderRadius: 6, padding: '2px 6px', fontWeight: 500,
+                  border: 'var(--border-width) solid rgba(255,194,0,0.2)',
+                  borderRadius: 'var(--radius-badge)', padding: '2px 6px', fontWeight: 500,
                 }}>
                   auto
                 </span>

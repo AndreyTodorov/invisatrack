@@ -17,8 +17,8 @@ export default function NavRow({
 }) {
   const btnBase: React.CSSProperties = {
     padding: '5px 12px',
-    borderRadius: 8,
-    border: '1px solid var(--border)',
+    borderRadius: 'var(--radius-btn)',
+    border: 'var(--border-width) solid var(--border)',
     background: 'transparent',
     fontSize: 13,
     fontFamily: 'inherit',

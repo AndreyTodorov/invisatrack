@@ -148,8 +148,8 @@ export default function HomeView() {
           {syncing && (
             <div style={{
               display: 'flex', alignItems: 'center', gap: 5,
-              background: 'rgba(251,191,36,0.08)', border: '1px solid rgba(251,191,36,0.25)',
-              borderRadius: 20, padding: '4px 10px',
+              background: 'rgba(251,191,36,0.08)', border: 'var(--border-width) solid rgba(251,191,36,0.25)',
+              borderRadius: 'var(--radius-badge)', padding: '4px 10px',
             }}>
               <div className="sync-dot-pulse" style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--amber)' }} />
               <span style={{ fontSize: 11, fontWeight: 500, color: 'var(--amber)' }}>Syncing…</span>
@@ -158,8 +158,8 @@ export default function HomeView() {
           {!syncing && connected === false && (
             <div style={{
               display: 'flex', alignItems: 'center', gap: 5,
-              background: 'rgba(100,116,139,0.08)', border: '1px solid rgba(100,116,139,0.2)',
-              borderRadius: 20, padding: '4px 10px',
+              background: 'rgba(100,116,139,0.08)', border: 'var(--border-width) solid rgba(100,116,139,0.2)',
+              borderRadius: 'var(--radius-badge)', padding: '4px 10px',
             }}>
               <div style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--text-faint)' }} />
               <span style={{ fontSize: 11, fontWeight: 500, color: 'var(--text-faint)' }}>Offline</span>
@@ -168,8 +168,8 @@ export default function HomeView() {
           {treatment && (
             <span style={{
               fontSize: 12, fontWeight: 500, color: 'var(--text-muted)',
-              background: 'var(--surface)', border: '1px solid var(--border)',
-              borderRadius: 20, padding: '4px 12px',
+              background: 'var(--surface)', border: 'var(--border-width) solid var(--border)',
+              borderRadius: 'var(--radius-badge)', padding: '4px 12px',
             }}>
               Set {treatment.currentSetNumber}
               {treatment.totalSets ? `/${treatment.totalSets}` : ''}
@@ -181,8 +181,8 @@ export default function HomeView() {
       {autoAdvancedSets.length > 0 && (
         <div style={{
           background: 'var(--surface)',
-          border: '1px solid rgba(34,211,238,0.2)',
-          borderRadius: 14, padding: '12px 16px',
+          border: 'var(--border-width) solid rgba(0,216,255,0.2)',
+          borderRadius: 'var(--radius-card)', padding: '12px 16px',
           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
         }}>
           <span style={{ fontSize: 13, color: 'var(--cyan)' }}>
@@ -200,8 +200,8 @@ export default function HomeView() {
       {autoCapped && !autoCappedDismissed && (
         <div style={{
           background: 'var(--amber-bg)',
-          border: '1px solid rgba(252,211,77,0.2)',
-          borderRadius: 14, padding: '12px 16px',
+          border: 'var(--border-width) solid rgba(255,194,0,0.2)',
+          borderRadius: 'var(--radius-card)', padding: '12px 16px',
           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
           fontSize: 13, color: 'var(--amber)',
         }}>
@@ -228,8 +228,8 @@ export default function HomeView() {
           className="animate-fade-in"
           style={{
             background: 'var(--surface)',
-            border: '1px solid rgba(74,222,128,0.2)',
-            borderRadius: 16,
+            border: 'var(--border-width) solid rgba(0,230,118,0.2)',
+            borderRadius: 'var(--radius-card)',
             padding: '14px 18px',
             display: 'flex', justifyContent: 'space-between', alignItems: 'center',
           }}
@@ -275,8 +275,8 @@ export default function HomeView() {
             onClick={() => setShowAdd(true)}
             style={{
               fontSize: 12, fontWeight: 600, color: 'var(--cyan)',
-              background: 'var(--cyan-bg)', border: '1px solid rgba(34,211,238,0.2)',
-              borderRadius: 16, padding: '3px 10px',
+              background: 'var(--cyan-bg)', border: 'var(--border-width) solid rgba(0,216,255,0.2)',
+              borderRadius: 'var(--radius-btn)', padding: '3px 10px',
               fontFamily: 'inherit', cursor: 'pointer',
             }}
           >
