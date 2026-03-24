@@ -1,3 +1,10 @@
+# [1.19.0](https://github.com/AndreyTodorov/invisatrack/compare/v1.18.0...v1.19.0) (2026-03-24)
+
+
+### Features
+
+* add readme-updater ([a41f1d5](https://github.com/AndreyTodorov/invisatrack/commit/a41f1d55514b70e62a891f637ccafb9709c322b0))
+
 # [1.18.0](https://github.com/AndreyTodorov/invisatrack/compare/v1.17.4...v1.18.0) (2026-03-24)
 
 
