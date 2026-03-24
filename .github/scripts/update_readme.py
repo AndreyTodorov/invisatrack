@@ -25,7 +25,7 @@ except ImportError:
 # ── Config ────────────────────────────────────────────────────────────────────
 SKILL_PATH  = Path(".claude/skills/readme-updater/SKILL.md")
 README_PATH = Path("README.md")
-MODEL       = "claude-opus-4-5"
+MODEL       = "claude-sonnet-4-5"
 MAX_TOKENS  = 16000   # enough for large READMEs
 
 EXCLUDE_DIRS = [
