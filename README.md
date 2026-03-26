@@ -13,15 +13,16 @@ A Progressive Web App for tracking aligner wear time. Logs removal sessions, com
 5. [Architecture Overview](#architecture-overview)
 6. [Data Model](#data-model)
 7. [Key Features & How They Work](#key-features--how-they-work)
-8. [Hooks Reference](#hooks-reference)
-9. [Components Reference](#components-reference)
-10. [Views & Routing](#views--routing)
-11. [Constants](#constants)
-12. [Utilities Reference](#utilities-reference)
-13. [Testing](#testing)
-14. [CI/CD](#cicd)
-15. [Known Bugs & Workarounds](#known-bugs--workarounds)
-16. [Design System](#design-system)
+8. [Theming System](#theming-system)
+9. [Hooks Reference](#hooks-reference)
+10. [Components Reference](#components-reference)
+11. [Views & Routing](#views--routing)
+12. [Constants](#constants)
+13. [Utilities Reference](#utilities-reference)
+14. [Testing](#testing)
+15. [CI/CD](#cicd)
+16. [Known Bugs & Workarounds](#known-bugs--workarounds)
+17. [Design System](#design-system)
 
 ---
 
@@ -29,7 +30,7 @@ A Progressive Web App for tracking aligner wear time. Logs removal sessions, com
 
 | Layer | Technology |
 |---|---|
-| Framework | React 19 + TypeScript |
+| Framework | React 19 + TypeScript 6 |
 | Build | Vite 8 |
 | Routing | React Router 7 (HashRouter) |
 | Styling | CSS variables (dark theme) + Tailwind CSS 4 |
@@ -137,6 +138,7 @@ src/
 ├── main.tsx                      # Entry point — HashRouter + context providers
 ├── constants.ts                  # App-wide magic numbers
 ├── navDirection.ts               # Module-level push/pop nav direction state
+├── themes.ts                     # Theme definitions, resolveTheme(), DEFAULT_THEME_ID
 ├── test-setup.ts                 # Vitest global setup (mocks localStorage)
 │
 ├── types/
@@ -144,7 +146,8 @@ src/
 │
 ├── contexts/
 │   ├── AuthContext.tsx            # Google sign-in, current user state
-│   └── DataContext.tsx            # Firebase real-time sync → React state
+│   ├── DataContext.tsx            # Firebase real-time sync → React state
+│   └── ThemeContext.tsx           # Theme state, localStorage init, profile sync, live preview
 │
 ├── hooks/
 │   ├── useTimer.ts               # Timer state, reminder, auto-cap logic
@@ -164,7 +167,8 @@ src/
 │   ├── stats.ts                  # computeDailyStats(), computeStreak()
 │   ├── sessionValidation.ts      # Overlap detection for manual sessions
 │   ├── csv.ts                    # Export sessions to CSV
-│   └── deviceId.ts               # Stable device identifier (localStorage)
+│   ├── deviceId.ts               # Stable device identifier (localStorage)
+│   └── uuid.ts                   # Crypto.randomUUID polyfill for non-HTTPS contexts
 │
 ├── components/
 │   ├── DevBanner.tsx             # Dev-mode banner; watches seedVersion → auto-reload on reseed
@@ -195,7 +199,7 @@ src/
 │       └── ExportButton.tsx      # CSV export trigger
 │
 └── views/
-    ├── HomeView.tsx              # Dashboard: timer, today's summary, session list
+    ├── HomeView.tsx              # Dashboard: timer, sync/offline pill, today's summary, session list
     ├── HistoryView.tsx           # Session + set history with filters and month grouping
     ├── ReportsView.tsx           # Analytics dashboard (tabs: 7d / week / month / by set)
     ├── SettingsView.tsx          # Nav-list settings with push/pop sub-screens
@@ -235,7 +239,8 @@ AuthContext  ──(uid)──▶  DataContext
 HashRouter (main.tsx)
   └── AuthProvider (App.tsx)
         └── DataProvider (App.tsx, mounted after sign-in)
-              └── Routes / Views
+              └── ThemeProvider (App.tsx)
+                    └── Routes / Views
 ```
 
 ---
@@ -286,6 +291,7 @@ interface UserProfile {
   dailyWearGoalMinutes: number       // Default 1320 (22 h)
   reminderThresholdMinutes: number   // Default 30
   autoCapMinutes: number             // Default 120
+  theme: string                      // Default "obsidian"
   createdAt: string
 }
 
@@ -341,9 +347,11 @@ Sessions that span local midnight are split by `splitSessionByDay()` so stats cr
 
 ### Settings navigation
 
-`SettingsView` renders a nav-list home screen with a `ProfileCard` (avatar, name, email, sign-out) and three `NavRow` entries: **Wear Goal**, **Treatment Plan**, and **Data & Export**. Tapping a row pushes a detail sub-screen using CSS `settings-push` / `settings-pop` animations (controlled by `navDir` state and a `navKey` counter). Swiping right from the left edge pops back to the list, mirroring iOS navigation conventions.
+`SettingsView` renders a nav-list home screen with a `ProfileCard` (avatar, name, email, sign-out) and four `NavRow` entries: **Wear Goal**, **Treatment Plan**, **Appearance**, and **Data & Export**. Tapping a row pushes a detail sub-screen using CSS `settings-push` / `settings-pop` animations (controlled by `navDir` state and a `navKey` counter). Swiping right from the left edge pops back to the list, mirroring iOS navigation conventions.
 
 The **Treatment Plan** sub-screen includes a **Duration override** field for the current aligner set, allowing its end date to be adjusted independently of the default cycle length.
+
+The **Appearance** sub-screen displays a grid of theme cards, each showing swatch colors and a label. Tapping a card activates live preview mode; a **Save** button persists the choice to `UserProfile.theme` and localStorage, while a **Cancel** button reverts to the previous theme. The selected theme displays a checkmark badge.
 
 App version (`__APP_VERSION__`) and build date (`__BUILD_DATE__`) are injected at build time and displayed at the bottom of the list screen.
 
@@ -358,7 +366,8 @@ App version (`__APP_VERSION__`) and build date (`__BUILD_DATE__`) are injected a
 ### Reports enhancements
 
 - **Best/Worst callout**: Two cards beneath the stats grid highlight the best and worst completed days in the selected period.
-- **Calendar heatmap**: The Month tab shows a `CalendarHeatmap` with month-by-month navigation. Each cell is coloured green (compliant), amber (≥ 85 % of goal), rose (below), or grey (no data).
+- **Calendar heatmap**: The Month tab shows a `CalendarHeatmap` with month-by-month navigation. Each cell is coloured green (compliant), amber (≥ 85 % of goal), rose (below), or grey (no data). Each heatmap cell shows day-of-month with contrast-aware text (dark on colored cells, faded on empty/future). Calendar heatmap navigation syncs with Month tab.
+- **Period navigation**: Week and Month tabs show Prev/Next/Today nav controls with shared offset state, disabled logic based on first session date.
 - **Tab persistence**: The selected Reports tab is saved to `localStorage` and restored on next visit.
 - **Swipe navigation**: Tabs in both ReportsView and HistoryView respond to horizontal swipe gestures via `useSwipeTab`.
 
@@ -367,6 +376,30 @@ App version (`__APP_VERSION__`) and build date (`__BUILD_DATE__`) are injected a
 `HomeView` shows status pills in the header:
 - **Syncing…** (amber, pulsing dot) — IndexedDB data is loaded but Firebase treatment hasn't confirmed yet.
 - **Offline** (grey dot) — Firebase `connected` ref is `false`.
+
+---
+
+## Theming System
+
+InvisaTrack supports multiple themes with live preview and persistence across devices.
+
+### Architecture
+
+- **Theme definitions** (`src/themes.ts`): Each theme defines CSS token overrides (colors, radii, shadows, borders). Built-in themes: `obsidian` (default dark), `light`, `neobrutalism`.
+- **ThemeContext** (`src/contexts/ThemeContext.tsx`): Manages theme state, syncs with localStorage and `UserProfile.theme`, handles live preview mode, and applies DOM cleanup on unmount.
+- **CSS tokens** (`src/index.css`): `--radius-card`, `--radius-btn`, `--radius-badge`, `--card-shadow`, `--border-width`, `--border`, and theme-specific color overrides.
+- **FOUC prevention**: An inline script in `index.html` reads the theme from localStorage and sets `[data-theme]` on the `<html>` root before first paint.
+- **Live preview**: Appearance settings UI allows switching themes without saving; a **Save** button persists the choice to Firebase and localStorage, while **Cancel** reverts to the previous theme.
+
+### Applying themes
+
+Themes are applied by setting the `[data-theme]` attribute on the `<html>` element. All CSS tokens are scoped to this attribute selector, allowing instant theme switching without re-renders.
+
+### Adding a new theme
+
+1. Define a new theme object in `src/themes.ts` with required token overrides.
+2. Add the theme to the `themes` map with a unique `id`.
+3. The theme will automatically appear in the Appearance settings grid.
 
 ---
 
@@ -409,7 +442,7 @@ App version (`__APP_VERSION__`) and build date (`__BUILD_DATE__`) are injected a
 | Component | Props | Notes |
 |---|---|---|
 | `AddSessionModal` | `onClose` | `datetime-local` inputs converted from/to UTC with offset |
-| `SessionEditModal` | `session, onClose` | Includes delete with in-UI confirmation |
+| `SessionEditModal` | `session, onClose` | Includes delete with in-UI confirmation; uses stored `startTimezoneOffset` for timezone round-trip; slide-down close animation |
 
 ### Sets
 
@@ -437,9 +470,9 @@ App version (`__APP_VERSION__`) and build date (`__BUILD_DATE__`) are injected a
 | `/` | HomeView | Dashboard: timer, sync/offline pill, today's summary, session list, treatment progress |
 | `/history` | HistoryView | Two tabs (Sessions / Sets); sessions grouped by month with filter chips and collapsible headers |
 | `/reports` | ReportsView | Tabs: 7 days / this week / this month / by set; swipe-to-change tabs; tab persisted to localStorage |
-| `/settings` | SettingsView | Nav-list home screen → push into Wear Goal / Treatment Plan / Data & Export sub-screens |
+| `/settings` | SettingsView | Nav-list home screen → push into Wear Goal / Treatment Plan / Appearance / Data & Export sub-screens |
 | `/onboarding` | OnboardingView | First-run: set number, total sets, daily goal |
-| (unauthenticated) | LoginView | Google sign-in |
+| (unauthenticated) | LoginView | Google sign-in; dev-only "Sign in as seed user" button |
 
 ---
 
@@ -483,6 +516,12 @@ MAX_SESSION_DURATION_HOURS         = 24     // Validation ceiling for manual ses
 |---|---|
 | `computeDailyStats(dateKey, segments, goalMinutes)` | Returns `DailyStats` for a given local date |
 | `computeStreak(dailyStats[])` | Returns current consecutive-compliant-day streak |
+
+### `src/utils/uuid.ts`
+
+| Function | Description |
+|---|---|
+| `randomUUID()` | Polyfill for `Crypto.randomUUID()` in non-HTTPS contexts (e.g. LAN testing via `http://192.168.x.x`) |
 
 ---
 
@@ -539,7 +578,8 @@ src/views/HomeView.test.tsx
 1. Checkout, Node 22, `npm ci`
 2. Inject Firebase secrets from GitHub repository secrets
 3. `npm run build` → `dist/`
-4. Deploy `dist/` to GitHub Pages
+4. `check-release` job gates deployment on whether semantic-release created a new tag at HEAD
+5. Deploy `dist/` to GitHub Pages (only if new release tagged)
 
 **GitHub secrets required**:
 - `VITE_FIREBASE_API_KEY`
@@ -559,19 +599,23 @@ src/views/HomeView.test.tsx
 | **LG-6** | useTimer | `setInterval` callback read stale config values | Config stored in `useRef`; refs updated in a separate `useEffect` |
 | **LG-7** | useSets | Duplicate set numbers allowed | Validate uniqueness before writing |
 | **CR-1** | useSessions | Dynamic `require()` of Firebase | All imports at module top |
-| **CR-2** | DataContext | `onValue` snapshot overwrote pending offline writes | Merge: retain `createdOffline=true` sessions absent from Firebase |
+| **CR-2** | DataContext | `onValue` snapshot overwrote pending offline writes | Merge: prefer local in-memory session if `updatedAt` is newer than Firebase snapshot |
 | **CR-3** | useSessions | Multiple concurrent active sessions possible | Guard: `sessions.find(s => s.endTime == null)` before `startSession` |
-| **CR-5** | SessionEditModal | UTC ↔ local conversion for `datetime-local` input | Manual conversion using stored timezone offset |
+| **CR-5** | SessionEditModal | UTC ↔ local conversion for `datetime-local` input | Manual conversion using stored timezone offset; prevents `endTime: undefined` being sent to Firebase when only `startTime` changes |
 | **CR-6** | useReports | "Today" computed in UTC not local time | Use `new Date().getTimezoneOffset()` to compute local today key |
 | **OS-4** | ReportsView | Date range computed in UTC | Apply device timezone offset when computing range boundaries |
 | **SF-2** | SettingsView, SessionEditModal | `window.confirm()` blocked in some browsers/PWAs | In-UI confirmation dialogs instead |
 | **SF-3** | useSessions | Double-tap creates two simultaneous sessions | `isSubmittingRef` prevents concurrent writes |
+| **iOS-1** | SessionEditModal, AddSessionModal | Date inputs overflow container width on iOS Safari | `-webkit-appearance: none` applied to date inputs |
+| **iOS-2** | Modal scrolling | Momentum scrolling broken on iOS Safari | `-webkit-overflow-scrolling: touch` applied to modal content |
+| **iOS-3** | Modal backdrop | Tab swipe gestures bleed through modal backdrop on iOS Safari | `touch-action` stopPropagation on modal backdrops |
+| **iOS-4** | Modal height | `dvh` unit causes layout issues on iOS Safari | Modal `maxHeight: calc(100% - 40px)` relative to viewport instead of `dvh` |
 
 ---
 
 ## Design System
 
-All colours, spacing, and typography are controlled via CSS custom properties defined in `src/index.css`. The app is dark-only.
+All colours, spacing, and typography are controlled via CSS custom properties defined in `src/index.css` and scoped to `[data-theme]` attribute on the `<html>` root. Themes override token values to achieve different visual styles.
 
 **Typography**: `Outfit` (headings, body) + `JetBrains Mono` (timers, numeric stats) — both from Google Fonts.
 
@@ -594,12 +638,18 @@ All colours, spacing, and typography are controlled via CSS custom properties de
 --rose          /* Error / over budget */
 --amber-bg      /* Amber tinted background */
 --rose-bg       /* Rose tinted background */
+
+--radius-card   /* Card border radius */
+--radius-btn    /* Button border radius */
+--radius-badge  /* Badge/pill border radius */
+--card-shadow   /* Card drop shadow */
+--border-width  /* Global border width */
 ```
 
 ### Keyframe animations
 
 | Class | Usage |
-|---|---|
+|---|---|---|
 | `pulse-ring` | Budget indicator ring pulses while timer is running |
 | `timer-pulse` | Active timer card pulses when reminder fires |
 | `animate-fade-in` | Post-session summary card fade in |
