@@ -10,6 +10,8 @@ import datetime
 import os
 import subprocess
 import sys
+import tempfile
+import time
 from pathlib import Path
 
 try:
@@ -25,8 +27,10 @@ except ImportError:
 # ── Config ────────────────────────────────────────────────────────────────────
 SKILL_PATH  = Path(".claude/skills/readme-updater/SKILL.md")
 README_PATH = Path("README.md")
-MODEL       = "claude-sonnet-4-5"
-MAX_TOKENS  = 16000   # enough for large READMEs
+MODEL       = os.getenv("README_UPDATER_MODEL", "claude-sonnet-4-5")
+MAX_TOKENS  = 16000
+MAX_RETRIES   = 5
+RETRY_BACKOFF = 60
 
 EXCLUDE_DIRS = [
     ".git", "vendor", "node_modules", "__pycache__",
@@ -44,12 +48,26 @@ MANIFESTS = [
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 def run(cmd: str, fallback: str = "") -> str:
+    """Run a command, return stdout. Swallow errors — safe for optional discovery."""
     try:
         return subprocess.check_output(
             cmd, shell=True, text=True, stderr=subprocess.DEVNULL
         ).strip()
     except subprocess.CalledProcessError:
         return fallback
+
+
+def shell(cmd: str, label: str) -> str:
+    """Run a command, print full output, raise on failure. Use for git/gh steps."""
+    print(f"[readme-updater] $ {cmd}")
+    result = subprocess.run(cmd, shell=True, text=True, capture_output=True)
+    if result.stdout:
+        print(result.stdout.rstrip())
+    if result.returncode != 0:
+        print(f"[readme-updater] ERROR in '{label}':", file=sys.stderr)
+        print(result.stderr.rstrip(), file=sys.stderr)
+        raise RuntimeError(f"{label} failed with exit code {result.returncode}")
+    return result.stdout.strip()
 
 
 def read_file(path, fallback: str = "") -> str:
@@ -59,18 +77,34 @@ def read_file(path, fallback: str = "") -> str:
         return fallback
 
 
+def api_call(client, **kwargs) -> str:
+    """Call the Anthropic API with exponential backoff on 429s."""
+    wait = RETRY_BACKOFF
+    for attempt in range(1, MAX_RETRIES + 1):
+        try:
+            response = client.messages.create(**kwargs)
+            return response.content[0].text.strip()
+        except anthropic.RateLimitError:
+            if attempt == MAX_RETRIES:
+                print(f"[readme-updater] ERROR: rate limit hit after {MAX_RETRIES} retries.", file=sys.stderr)
+                raise
+            print(f"[readme-updater] Rate limit. Waiting {wait}s (retry {attempt}/{MAX_RETRIES - 1})...")
+            time.sleep(wait)
+            wait *= 2
+        except anthropic.APIError as e:
+            print(f"[readme-updater] API error: {e}", file=sys.stderr)
+            raise
+
+
 # ── Context gathering ─────────────────────────────────────────────────────────
 def gather_context() -> dict:
+    print(f"[readme-updater] Model: {MODEL}")
     print("[readme-updater] Gathering project context...")
 
     last_sha = run("git log -1 --format='%H' -- README.md")
     if last_sha:
-        commits = run(
-            f"git log {last_sha}..HEAD --no-merges --format='%H%n%s%n%b%n----'"
-        )
-        count = run(
-            f"git log {last_sha}..HEAD --no-merges --oneline | wc -l"
-        ).strip()
+        commits = run(f"git log {last_sha}..HEAD --no-merges --format='%H%n%s%n%b%n----'")
+        count   = run(f"git log {last_sha}..HEAD --no-merges --oneline | wc -l").strip()
     else:
         commits = run("git log -30 --no-merges --format='%H%n%s%n%b%n----'")
         count   = "unknown (no prior README commit)"
@@ -118,18 +152,12 @@ def gather_context() -> dict:
             if s:
                 scripts.append(f"{f} scripts:\n{s}")
 
-    docker_compose = read_file(
-        "docker-compose.yml", read_file("docker-compose.yaml", "")
-    )
-    dockerfile = run(
-        "grep -E '^(FROM|EXPOSE|ENTRYPOINT|CMD|ENV)' Dockerfile 2>/dev/null"
-    )
-    infra_files = run(
-        "ls .github/workflows/ kubernetes/ helm/ terraform/ infra/ 2>/dev/null"
-    )
+    docker_compose = read_file("docker-compose.yml", read_file("docker-compose.yaml", ""))
+    dockerfile     = run("grep -E '^(FROM|EXPOSE|ENTRYPOINT|CMD|ENV)' Dockerfile 2>/dev/null")
+    infra_files    = run("ls .github/workflows/ kubernetes/ helm/ terraform/ infra/ 2>/dev/null")
 
     exclude_args = " ".join(f"-not -path '*/{d}/*'" for d in EXCLUDE_DIRS)
-    dir_tree = run(f"find . -maxdepth 2 {exclude_args} | sort | head -60")
+    dir_tree     = run(f"find . -maxdepth 2 {exclude_args} | sort | head -60")
 
     return {
         "readme":         read_file(README_PATH, "(README.md not found)"),
@@ -201,14 +229,13 @@ def build_context_block(ctx: dict) -> str:
 # ── Call 1: change report ─────────────────────────────────────────────────────
 def call_analyse(client, system: str, ctx: dict) -> str:
     print("[readme-updater] Call 1/2 — analysing changes...")
-
     prompt = f"""
 Analyse the project context below and produce ONLY a change report.
-Do NOT write any README content yet. Do NOT include any other text.
+Do NOT write any README content yet.
 
 {build_context_block(ctx)}
 
-Output format — use exactly this structure:
+Output format:
 
 ## README Change Report
 
@@ -231,19 +258,13 @@ Output format — use exactly this structure:
 If the README needs no changes, output only: "README is up-to-date. No changes needed."
 """.strip()
 
-    response = client.messages.create(
-        model=MODEL,
-        max_tokens=2000,
-        system=system,
-        messages=[{"role": "user", "content": prompt}],
-    )
-    return response.content[0].text.strip()
+    return api_call(client, model=MODEL, max_tokens=2000, system=system,
+                    messages=[{"role": "user", "content": prompt}])
 
 
 # ── Call 2: write updated README ──────────────────────────────────────────────
 def call_write(client, system: str, ctx: dict, report: str) -> str:
     print("[readme-updater] Call 2/2 — writing updated README...")
-
     prompt = f"""
 You have already analysed the project and produced this change report:
 
@@ -261,7 +282,7 @@ Rules:
 - Never add or remove screenshots.
 - If a Changelog section exists, prepend new entries; never rewrite history.
 
-Current README for reference:
+Current README:
 <readme>
 {ctx['readme']}
 </readme>
@@ -270,13 +291,8 @@ Output ONLY the complete updated README.md content.
 No preamble, no explanation, no code fences — just the raw markdown.
 """.strip()
 
-    response = client.messages.create(
-        model=MODEL,
-        max_tokens=MAX_TOKENS,
-        system=system,
-        messages=[{"role": "user", "content": prompt}],
-    )
-    return response.content[0].text.strip()
+    return api_call(client, model=MODEL, max_tokens=MAX_TOKENS, system=system,
+                    messages=[{"role": "user", "content": prompt}])
 
 
 # ── Git / PR helpers ──────────────────────────────────────────────────────────
@@ -285,28 +301,42 @@ def push_pr_branch(last_sha: str) -> None:
     branch    = f"readme-updater/{ts}"
     short_sha = last_sha[:7] if last_sha else "initial"
 
-    run(f"git checkout -b {branch}")
-    run("git add README.md")
-    run(
-        f'git commit -m '
-        f'"docs: update README to reflect changes since {short_sha}\n\n'
-        f'Auto-generated by readme-updater."'
-    )
-    run(f"git push origin {branch}")
+    shell(f"git checkout -b {branch}", "git checkout")
+    shell("git add README.md", "git add")
+
+    # Write commit message to a temp file to avoid shell quoting issues
+    commit_msg = f"docs: update README to reflect changes since {short_sha}\n\nAuto-generated by readme-updater."
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
+        f.write(commit_msg)
+        msg_file = f.name
+
+    shell(f"git commit -F {msg_file}", "git commit")
+    shell(f"git push origin {branch}", "git push")
     print(f"[readme-updater] Branch pushed: {branch}")
 
-    if run("which gh"):
-        diff = run("git diff HEAD~1 README.md | head -100")
-        body = f"Auto-generated by readme-updater.\n\n```diff\n{diff}\n```"
-        result = run(
-            f'gh pr create '
-            f'--title "docs: update README ({datetime.date.today()})" '
-            f'--body "{body}" '
-            f'--base main --head {branch} --label documentation'
-        )
-        print(f"[readme-updater] PR: {result}")
+    # Write PR body to a temp file to avoid shell quoting / newline issues
+    diff = run("git diff HEAD~1 README.md | head -100")
+    pr_body = f"Auto-generated by readme-updater.\n\n```diff\n{diff}\n```"
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".md", delete=False) as f:
+        f.write(pr_body)
+        body_file = f.name
+
+    gh_available = run("which gh")
+    if gh_available:
+        try:
+            result = shell(
+                f'gh pr create '
+                f'--title "docs: update README ({datetime.date.today()})" '
+                f'--body-file {body_file} '
+                f'--base main '
+                f'--head {branch}',
+                "gh pr create"
+            )
+            print(f"[readme-updater] PR created: {result}")
+        except RuntimeError:
+            print(f"[readme-updater] PR creation failed — branch {branch} is ready, open a PR manually.")
     else:
-        print("[readme-updater] gh CLI not found — open a PR manually.")
+        print(f"[readme-updater] gh CLI not found — open a PR manually from branch: {branch}")
 
 
 # ── Main ──────────────────────────────────────────────────────────────────────
@@ -316,13 +346,11 @@ def main() -> None:
         print(f"[readme-updater] ERROR: skill not found at {SKILL_PATH}", file=sys.stderr)
         sys.exit(1)
 
-    # Strip YAML frontmatter
     system = raw[raw.find("---", 3) + 3:].strip() if raw.startswith("---") else raw
 
     ctx    = gather_context()
     client = anthropic.Anthropic()
 
-    # ── Call 1: analyse ───────────────────────────────────────────────────────
     report = call_analyse(client, system, ctx)
     print("\n" + report + "\n")
 
@@ -330,7 +358,6 @@ def main() -> None:
         print("[readme-updater] README is already up-to-date. Nothing to do.")
         sys.exit(0)
 
-    # ── Call 2: write ─────────────────────────────────────────────────────────
     new_readme = call_write(client, system, ctx, report)
 
     if not new_readme:
