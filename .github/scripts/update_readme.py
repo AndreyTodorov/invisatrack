@@ -297,7 +297,7 @@ No preamble, no explanation, no code fences — just the raw markdown.
 
 # ── Git / PR helpers ──────────────────────────────────────────────────────────
 def push_pr_branch(last_sha: str) -> None:
-    ts        = datetime.datetime.utcnow().strftime("%Y%m%d-%H%M%S")
+    ts        = datetime.datetime.now(datetime.UTC).strftime("%Y%m%d-%H%M%S")
     branch    = f"readme-updater/{ts}"
     short_sha = last_sha[:7] if last_sha else "initial"
 
