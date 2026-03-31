@@ -32,7 +32,7 @@ A Progressive Web App for tracking aligner wear time. Logs removal sessions, com
 | Framework | React 19 + TypeScript |
 | Build | Vite 8 |
 | Routing | React Router 7 (HashRouter) |
-| Styling | CSS variables (dark theme) + Tailwind CSS 4 |
+| Styling | CSS variables + Tailwind CSS 4 |
 | Database | Firebase Realtime Database |
 | Auth | Firebase Auth (Google OAuth) |
 | Offline storage | Dexie 4 (IndexedDB wrapper) |
@@ -124,6 +124,8 @@ VITE_USE_EMULATOR=false          # Set to "true" to use Firebase emulators
 
 All variables are injected by Vite at build time via `import.meta.env`. They are also stored as GitHub Actions secrets for the deploy workflow.
 
+<!-- TODO: verify if MODEL and README_UPDATER_MODEL are user-facing config or internal tooling only -->
+
 ---
 
 ## Project Structure
@@ -144,7 +146,8 @@ src/
 │
 ├── contexts/
 │   ├── AuthContext.tsx            # Google sign-in, current user state
-│   └── DataContext.tsx            # Firebase real-time sync → React state
+│   ├── DataContext.tsx            # Firebase real-time sync → React state
+│   └── ThemeContext.tsx           # Theme state, localStorage init, profile sync, live preview
 │
 ├── hooks/
 │   ├── useTimer.ts               # Timer state, reminder, auto-cap logic
@@ -165,6 +168,8 @@ src/
 │   ├── sessionValidation.ts      # Overlap detection for manual sessions
 │   ├── csv.ts                    # Export sessions to CSV
 │   └── deviceId.ts               # Stable device identifier (localStorage)
+│
+├── themes.ts                     # THEMES, resolveTheme(), DEFAULT_THEME_ID
 │
 ├── components/
 │   ├── DevBanner.tsx             # Dev-mode banner; watches seedVersion → auto-reload on reseed
@@ -190,12 +195,13 @@ src/
 │   ├── reports/
 │   │   ├── WearChart.tsx         # Recharts bar chart (wear % by day)
 │   │   ├── StatsGrid.tsx         # Summary stats (avg wear, removals, …)
-│   │   └── SetReportCard.tsx     # Per-set statistics card
+│   │   ├── SetReportCard.tsx     # Per-set statistics card
+│   │   └── NavRow.tsx            # Prev/Next/Today navigation bar for Week/Month tabs and heatmap
 │   └── settings/
 │       └── ExportButton.tsx      # CSV export trigger
 │
 └── views/
-    ├── HomeView.tsx              # Dashboard: timer, today's summary, session list
+    ├── HomeView.tsx              # Dashboard: timer, sync/offline pill, today's summary, session list
     ├── HistoryView.tsx           # Session + set history with filters and month grouping
     ├── ReportsView.tsx           # Analytics dashboard (tabs: 7d / week / month / by set)
     ├── SettingsView.tsx          # Nav-list settings with push/pop sub-screens
@@ -235,7 +241,8 @@ AuthContext  ──(uid)──▶  DataContext
 HashRouter (main.tsx)
   └── AuthProvider (App.tsx)
         └── DataProvider (App.tsx, mounted after sign-in)
-              └── Routes / Views
+              └── ThemeProvider (App.tsx)
+                    └── Routes / Views
 ```
 
 ---
@@ -286,6 +293,7 @@ interface UserProfile {
   dailyWearGoalMinutes: number       // Default 1320 (22 h)
   reminderThresholdMinutes: number   // Default 30
   autoCapMinutes: number             // Default 120
+  theme?: string                     // Theme ID (e.g. "obsidian", "light", "neobrutalism")
   createdAt: string
 }
 
@@ -339,9 +347,35 @@ Sessions that span local midnight are split by `splitSessionByDay()` so stats cr
 
 `useAutoAdvanceSet` runs on mount (once per `currentSetNumber`). If the current set's `endDate` has passed it automatically creates the next set(s) and advances `treatment.currentSetNumber` forward, chaining through any consecutive expired sets in one pass. Pre-existing sets in the chain are recognised and skipped (only `treatment` is updated for those).
 
+### Theme system
+
+InvisaTrack supports three themes:
+
+- **Obsidian** (default) — dark background, cyan accent, soft shadows, rounded corners
+- **Light** — white background, purple accent, subtle shadows, rounded corners
+- **Neobrutalism** — white background, yellow accent, hard black shadows, square corners
+
+Theme selection is available in the **Appearance** settings section, which shows a live preview and a 2-column grid of theme cards. The selected theme displays a ✓ badge. Theme state is managed by `ThemeContext` (`src/contexts/ThemeContext.tsx`), which:
+
+- Initializes from `localStorage` on mount
+- Syncs the selected theme to `UserProfile.theme` in Firebase
+- Supports live preview mode (temporary theme switch without persisting)
+- Applies theme changes to the DOM via `document.documentElement.setAttribute('data-theme', ...)`
+- Cleans up on unmount
+
+All components use CSS custom properties defined in `:root` and theme-specific overrides in `[data-theme="light"]` and `[data-theme="neobrutalism"]` blocks in `src/index.css`. Theme-agnostic tokens include:
+
+- `--radius-card`, `--radius-btn`, `--radius-badge` — border radius values
+- `--card-shadow` — box shadow for cards
+- `--border-width` — default border thickness
+
+**FOUC prevention**: An inline script in `index.html` reads the theme from `localStorage` and applies it to the `<html>` element before React mounts, preventing a flash of the default theme on page load.
+
+Theme definitions and utilities are in `src/themes.ts` (`THEMES`, `resolveTheme()`, `DEFAULT_THEME_ID`). Theme-related tests are in `src/themes.test.ts` and `src/contexts/ThemeContext.test.tsx`.
+
 ### Settings navigation
 
-`SettingsView` renders a nav-list home screen with a `ProfileCard` (avatar, name, email, sign-out) and three `NavRow` entries: **Wear Goal**, **Treatment Plan**, and **Data & Export**. Tapping a row pushes a detail sub-screen using CSS `settings-push` / `settings-pop` animations (controlled by `navDir` state and a `navKey` counter). Swiping right from the left edge pops back to the list, mirroring iOS navigation conventions.
+`SettingsView` renders a nav-list home screen with a `ProfileCard` (avatar, name, email, sign-out) and four `NavRow` entries: **Wear Goal**, **Treatment Plan**, **Appearance**, and **Data & Export**. Tapping a row pushes a detail sub-screen using CSS `settings-push` / `settings-pop` animations (controlled by `navDir` state and a `navKey` counter). Swiping right from the left edge pops back to the list, mirroring iOS navigation conventions.
 
 The **Treatment Plan** sub-screen includes a **Duration override** field for the current aligner set, allowing its end date to be adjusted independently of the default cycle length.
 
@@ -358,9 +392,29 @@ App version (`__APP_VERSION__`) and build date (`__BUILD_DATE__`) are injected a
 ### Reports enhancements
 
 - **Best/Worst callout**: Two cards beneath the stats grid highlight the best and worst completed days in the selected period.
-- **Calendar heatmap**: The Month tab shows a `CalendarHeatmap` with month-by-month navigation. Each cell is coloured green (compliant), amber (≥ 85 % of goal), rose (below), or grey (no data).
+- **Calendar heatmap**: The Month tab shows a `CalendarHeatmap` with month-by-month navigation. Each cell is coloured green (compliant), amber (≥ 85 % of goal), rose (below), or grey (no data). **Heatmap cells now include day-of-month labels with contrast-aware text colors**.
+- **Period navigation**: Week and Month tabs include Prev/Next/Today controls with shared offset state. CalendarHeatmap navigation is synced with the Month tab. Heatmap cells show day-of-month labels with contrast-aware text colors.
 - **Tab persistence**: The selected Reports tab is saved to `localStorage` and restored on next visit.
 - **Swipe navigation**: Tabs in both ReportsView and HistoryView respond to horizontal swipe gestures via `useSwipeTab`.
+
+### Session editing
+
+`SessionEditModal` now uses the **stored `startTimezoneOffset`** for UTC↔local conversion, preventing false overlap errors after DST changes. When editing a session:
+
+- Only changed fields are written to Firebase (prevents sending `endTime: undefined` when only `startTime` changes)
+- Slide-down close animation (0.2s) applied to both SessionEditModal and SetEditModal
+- Delete button is `fit-content` so only the text is tappable
+
+### Modal sheet scrolling
+
+Bottom sheet modals have been fixed for iOS Safari:
+
+- `overflow: hidden` on backdrop prevents body scroll
+- `maxHeight: calc(100% - 40px)` on sheet ensures it stays within viewport
+- `-webkit-overflow-scrolling: touch` enables momentum scrolling
+- Horizontal overflow clipping: `overflowX: hidden` removed from sheets to fix Safari rendering bug
+- Date inputs respect container width (`min-width: 0`, `-webkit-appearance: none`)
+- Touch events on backdrop use `stopPropagation` to prevent interference with sheet gestures
 
 ### Sync and connectivity indicators
 
@@ -399,7 +453,7 @@ App version (`__APP_VERSION__`) and build date (`__BUILD_DATE__`) are injected a
 | Component | Props | Notes |
 |---|---|---|
 | `DailySummary` | `totalOffMinutes, removals, goalMinutes, streak, sessions?, activeMinutes?` | 24h timeline bar + wear ring + stat tiles; `activeMinutes` updates live |
-| `CalendarHeatmap` | `dateStatsMap, sessionDates, goalMinutes, today` | Month grid with prev/next navigation; green = compliant, amber = near goal, rose = missed |
+| `CalendarHeatmap` | `dateStatsMap, sessionDates, goalMinutes, today` | Month grid with prev/next navigation; green = compliant, amber = near goal, rose = missed; day-of-month labels on each cell with contrast-aware colors |
 | `SessionList` | `sessions, onEdit, activeSession?, activeElapsedMinutes?` | Filters out active sessions (`endTime == null`) unless passed via `activeSession` |
 | `StreakBadge` | `streak` | Amber pill; hidden at 0 |
 | `TreatmentProgress` | `treatment, defaultSetDurationDays, currentSetStartDate?, currentSetEndDate?, currentSetDayStatus?, avgWearPct?, goalMinutes?` | Overall progress bar + per-day compliance dots + avg wear status badge |
@@ -425,6 +479,7 @@ App version (`__APP_VERSION__`) and build date (`__BUILD_DATE__`) are injected a
 | `WearChart` | `data: DailyStats[], goalMinutes` | DD.MM date labels; cyan = compliant, rose = not |
 | `StatsGrid` | `stats: DailyStats[]` | Avg wear time, avg removals (rounded integer), compliance days |
 | `SetReportCard` | `setNumber, current, previous?` | Shows delta vs previous set |
+| `NavRow` | `label, onPrev, onNext, onToday, isPrevDisabled, isNextDisabled, isTodayDisabled` | Prev/Next/Today navigation bar for Week/Month tabs and heatmap |
 
 ---
 
@@ -437,7 +492,7 @@ App version (`__APP_VERSION__`) and build date (`__BUILD_DATE__`) are injected a
 | `/` | HomeView | Dashboard: timer, sync/offline pill, today's summary, session list, treatment progress |
 | `/history` | HistoryView | Two tabs (Sessions / Sets); sessions grouped by month with filter chips and collapsible headers |
 | `/reports` | ReportsView | Tabs: 7 days / this week / this month / by set; swipe-to-change tabs; tab persisted to localStorage |
-| `/settings` | SettingsView | Nav-list home screen → push into Wear Goal / Treatment Plan / Data & Export sub-screens |
+| `/settings` | SettingsView | Nav-list home screen → push into Wear Goal / Treatment Plan / Appearance / Data & Export sub-screens |
 | `/onboarding` | OnboardingView | First-run: set number, total sets, daily goal |
 | (unauthenticated) | LoginView | Google sign-in |
 
@@ -512,8 +567,12 @@ src/utils/sessionValidation.test.ts
 src/components/dashboard/DailySummary.test.tsx
 src/components/dashboard/SessionList.test.tsx
 src/contexts/DataContext.test.tsx
+src/contexts/ThemeContext.test.tsx
 src/views/HomeView.test.tsx
+src/themes.test.ts
 ```
+
+**158 tests passing** (including theme system tests).
 
 ### Mocking conventions
 
@@ -571,7 +630,7 @@ src/views/HomeView.test.tsx
 
 ## Design System
 
-All colours, spacing, and typography are controlled via CSS custom properties defined in `src/index.css`. The app is dark-only.
+Colours, spacing, and typography are controlled via CSS custom properties defined in `src/index.css`. The app supports three themes: **Obsidian** (dark, default), **Light**, and **Neobrutalism** (white background, yellow accent, hard shadows, square corners).
 
 **Typography**: `Outfit` (headings, body) + `JetBrains Mono` (timers, numeric stats) — both from Google Fonts.
 
@@ -595,6 +654,18 @@ All colours, spacing, and typography are controlled via CSS custom properties de
 --amber-bg      /* Amber tinted background */
 --rose-bg       /* Rose tinted background */
 ```
+
+### Theme-agnostic CSS tokens
+
+```css
+--radius-card   /* Card border radius */
+--radius-btn    /* Button border radius */
+--radius-badge  /* Badge border radius */
+--card-shadow   /* Box shadow for cards */
+--border-width  /* Default border thickness */
+```
+
+Theme-specific overrides are defined in `[data-theme="light"]` and `[data-theme="neobrutalism"]` blocks in `src/index.css`. Components use these tokens instead of hardcoded values to ensure theme consistency.
 
 ### Keyframe animations
 
