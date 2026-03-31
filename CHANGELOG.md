@@ -1,3 +1,10 @@
+# [1.20.0](https://github.com/AndreyTodorov/invisatrack/compare/v1.19.5...v1.20.0) (2026-03-31)
+
+
+### Features
+
+* add README.md generator skill and update dependabot schedule to monthly ([a256868](https://github.com/AndreyTodorov/invisatrack/commit/a256868a05421b64a1bc7126be1d076d546f1b82))
+
 ## [1.19.5](https://github.com/AndreyTodorov/invisatrack/compare/v1.19.4...v1.19.5) (2026-03-31)
 
 
