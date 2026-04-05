@@ -21,7 +21,7 @@
     "@tailwindcss/vite": "^4.2.2",
     "date-fns": "^4.1.0",
     "date-fns-tz": "^3.2.0",
-    "dexie": "^4.4.1",
+    "dexie": "^4.4.2",
     "firebase": "^12.11.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
