@@ -30,15 +30,15 @@ A Progressive Web App for tracking aligner wear time. Logs removal sessions, com
 | Layer | Technology |
 |---|---|
 | Framework | React 19 + TypeScript |
-| Build | Vite 8 |
+| Build | Vite 8.0.3 |
 | Routing | React Router 7 (HashRouter) |
 | Styling | CSS variables + Tailwind CSS 4 |
 | Database | Firebase Realtime Database |
 | Auth | Firebase Auth (Google OAuth) |
-| Offline storage | Dexie 4 (IndexedDB wrapper) |
+| Offline storage | Dexie 4.4.2 (IndexedDB wrapper) |
 | Charts | Recharts 3 |
 | PWA | vite-plugin-pwa |
-| Testing | Vitest 4 + @testing-library/react |
+| Testing | Vitest 4.1.2 + @testing-library/react |
 
 ---
 
@@ -124,7 +124,7 @@ VITE_USE_EMULATOR=false          # Set to "true" to use Firebase emulators
 
 All variables are injected by Vite at build time via `import.meta.env`. They are also stored as GitHub Actions secrets for the deploy workflow.
 
-<!-- TODO: verify if MODEL and README_UPDATER_MODEL are user-facing config or internal tooling only -->
+> **Note:** `MODEL` and `README_UPDATER_MODEL` are internal tooling environment variables used for AI-assisted development workflows (e.g. automated README generation). They are not required for running the app.
 
 ---
 
@@ -543,7 +543,7 @@ MAX_SESSION_DURATION_HOURS         = 24     // Validation ceiling for manual ses
 
 ## Testing
 
-**Stack**: Vitest 4 + @testing-library/react + jsdom
+**Stack**: Vitest 4.1.2 + @testing-library/react + jsdom
 
 ```bash
 npm test                # Run all tests once
@@ -572,7 +572,7 @@ src/views/HomeView.test.tsx
 src/themes.test.ts
 ```
 
-**158 tests passing** (including theme system tests).
+<!-- TODO: verify current test count with `npm test` output -->
 
 ### Mocking conventions
 
@@ -606,6 +606,12 @@ src/themes.test.ts
 - `VITE_FIREBASE_DATABASE_URL`
 - `VITE_FIREBASE_PROJECT_ID`
 - `VITE_FIREBASE_APP_ID`
+
+### Automated dependency management
+
+Dependabot is configured to check for dependency updates monthly via `.github/dependabot.yml`. It monitors both npm dependencies and GitHub Actions, automatically opening pull requests for available updates.
+
+<!-- TODO: verify if a README update workflow exists in `.github/workflows/` and document if present -->
 
 ---
 
