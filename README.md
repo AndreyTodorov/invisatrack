@@ -20,8 +20,9 @@ A Progressive Web App for tracking aligner wear time. Logs removal sessions, com
 12. [Utilities Reference](#utilities-reference)
 13. [Testing](#testing)
 14. [CI/CD](#cicd)
-15. [Known Bugs & Workarounds](#known-bugs--workarounds)
-16. [Design System](#design-system)
+15. [Contributing](#contributing)
+16. [Known Bugs & Workarounds](#known-bugs--workarounds)
+17. [Design System](#design-system)
 
 ---
 
@@ -107,6 +108,10 @@ const MIN_SESSION_MINUTES  = 15;
 const MAX_SESSION_MINUTES  = 45;
 ```
 
+### Icon generation
+
+`scripts/generate-icons.ts` generates PWA icons from source assets. This script is used during the build process to produce all required icon sizes for the Progressive Web App manifest.
+
 ---
 
 ## Environment Variables
@@ -124,7 +129,9 @@ VITE_USE_EMULATOR=false          # Set to "true" to use Firebase emulators
 
 All variables are injected by Vite at build time via `import.meta.env`. They are also stored as GitHub Actions secrets for the deploy workflow.
 
-<!-- TODO: verify if MODEL and README_UPDATER_MODEL are user-facing config or internal tooling only -->
+**Internal tooling variables** (not required for app functionality):
+
+- `MODEL` and `README_UPDATER_MODEL` are used by AI-assisted development tools during documentation generation. These are not user-facing configuration and can be ignored when running or deploying the application.
 
 ---
 
@@ -132,7 +139,8 @@ All variables are injected by Vite at build time via `import.meta.env`. They are
 
 ```
 scripts/
-└── seed.ts                       # Dev data seeder (sessions + sets → emulator)
+├── seed.ts                       # Dev data seeder (sessions + sets → emulator)
+└── generate-icons.ts             # PWA icon generator from source assets
 
 src/
 ├── App.tsx                       # Route definitions, auth guard
@@ -606,6 +614,63 @@ src/themes.test.ts
 - `VITE_FIREBASE_DATABASE_URL`
 - `VITE_FIREBASE_PROJECT_ID`
 - `VITE_FIREBASE_APP_ID`
+
+### Automated dependency updates
+
+Dependabot runs monthly to keep dependencies current. Configuration in `.github/dependabot.yml`:
+
+- Grouped updates by production and development dependencies
+- Auto-merge enabled for patch and minor version bumps
+- Separate pull requests for major version updates requiring manual review
+
+### Automated releases
+
+Semantic-release handles versioning and changelog generation based on conventional commits:
+
+- Configured via `.releaserc.json`
+- Automated releases triggered by commits to `main`
+- Generates `CHANGELOG.md` and creates GitHub releases
+- Version bumps follow semantic versioning based on commit message prefixes (`feat:`, `fix:`, `BREAKING CHANGE:`)
+
+### README automation
+
+A GitHub Actions workflow automatically updates this README when changes are detected in the codebase or git history. The workflow analyzes:
+
+- Git commits since the last README update
+- Project structure and dependency changes
+- Environment variable references
+- Available scripts and tooling
+
+Updates are proposed via pull request for review before merging.
+
+---
+
+## Contributing
+
+### Commit conventions
+
+This project uses [Conventional Commits](https://www.conventionalcommits.org/) for commit messages. Commit message format is enforced by Husky hooks (`commitlint.config.js`).
+
+**Format**: `type(scope): subject`
+
+**Common types**:
+- `feat:` — new feature
+- `fix:` — bug fix
+- `docs:` — documentation changes
+- `style:` — formatting, missing semicolons, etc. (no code change)
+- `refactor:` — code change that neither fixes a bug nor adds a feature
+- `test:` — adding or updating tests
+- `chore:` — maintenance tasks, dependency updates
+
+**Examples**:
+```
+feat(timer): add snooze button to reminder alert
+fix(reports): correct heatmap cell color calculation
+docs: update environment variable descriptions
+chore(deps): bump vite from 8.0.2 to 8.0.3
+```
+
+Commits that don't follow this format will be rejected by the pre-commit hook.
 
 ---
 
